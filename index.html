@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hordeless</title>
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body>
+    <div id="game-container">
+      <canvas id="gameCanvas"></canvas>
+      
+      <!-- UI Overlays -->
+      <div id="main-menu" class="ui-screen active">
+        <h1>HORDELESS</h1>
+        <button id="btn-play">Play</button>
+      </div>
+
+      <div id="upgrade-menu" class="ui-screen">
+        <h2>Skill Preparation</h2>
+        <div class="stats-display">
+          <span>Coins: <span id="menu-coins">0</span></span>
+        </div>
+        <div class="upgrade-list">
+          <div class="upgrade-item">
+            <span>Swiftness (Speed) Level: <span id="lvl-speed">0</span></span>
+            <button id="btn-upg-speed">Buy (10 C)</button>
+          </div>
+          <div class="upgrade-item">
+            <span>Spring (Jump) Level: <span id="lvl-jump">0</span></span>
+            <button id="btn-upg-jump">Buy (15 C)</button>
+          </div>
+          <div class="upgrade-item">
+            <span>Vitality (Health) Level: <span id="lvl-health">0</span></span>
+            <button id="btn-upg-health">Buy (20 C)</button>
+          </div>
+        </div>
+        <button id="btn-start-run" class="action-btn">Enter Arena</button>
+      </div>
+
+      <div id="hud" class="ui-screen">
+        <div class="hud-top">
+          <div class="hud-stat">Health: <span id="hud-health">3</span></div>
+          <div class="hud-stat">Score: <span id="hud-score">0</span></div>
+          <div class="hud-stat">Coins: <span id="hud-coins">0</span></div>
+        </div>
+      </div>
+
+      <div id="game-over" class="ui-screen">
+        <h2>GAME OVER</h2>
+        <p>Final Score: <span id="go-score">0</span></p>
+        <p>Coins Collected: <span id="go-coins">0</span></p>
+        <button id="btn-menu">Back to Menu</button>
+      </div>
+    </div>
+    
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
