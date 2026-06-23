@@ -5,6 +5,8 @@ import EnemyManager from './EnemyManager.js';
 import ItemManager from './ItemManager.js';
 import PlatformManager from './PlatformManager.js';
 import EffectManager from './EffectManager.js';
+import BoxManager from './BoxManager.js';
+import TrampolineManager from './TrampolineManager.js';
 import Sprite from './Sprite.js';
 
 const canvas = document.getElementById('gameCanvas');
@@ -21,6 +23,8 @@ const game = new Game(GAME_WIDTH, GAME_HEIGHT);
 const input = new InputHandler();
 const platforms = new PlatformManager(GAME_WIDTH, GAME_HEIGHT);
 const effects = new EffectManager();
+const boxes = new BoxManager(game);
+const trampolines = new TrampolineManager();
 
 input.platforms = platforms.platforms;
 
@@ -51,6 +55,8 @@ game.onStartRun = (upgrades) => {
     enemies.reset(effects);
     items.reset(LEVEL_WIDTH);
     effects.reset();
+    boxes.reset();
+    trampolines.reset();
     cameraX = 0;
 };
 
@@ -103,6 +109,8 @@ function gameLoop(timestamp) {
         player.update(input, deltaTime);
         enemies.update(deltaTime, player, platforms.platforms, effects);
         items.update(deltaTime, player);
+        boxes.update(deltaTime, player, items);
+        trampolines.update(deltaTime, player);
         game.updateScore(deltaTime);
 
         // Camera Follows Player (centered horizontally)
@@ -135,6 +143,8 @@ function gameLoop(timestamp) {
         endFlag.draw(ctx, endX - cameraX, GAME_HEIGHT - 40 - 64);
         
         platforms.draw(ctx, cameraX);
+        boxes.draw(ctx, cameraX);
+        trampolines.draw(ctx, cameraX);
         items.draw(ctx, cameraX);
         enemies.draw(ctx, cameraX);
         effects.draw(ctx, cameraX);

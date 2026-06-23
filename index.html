@@ -11,29 +11,56 @@
     <div id="game-container">
       <canvas id="gameCanvas"></canvas>
       
+      <!-- Music -->
+      <audio id="bg-music" src="/Assets/bobbeats-8-bit-loop-music-290770.mp3.mpeg" loop></audio>
+
       <!-- UI Overlays -->
       <div id="main-menu" class="ui-screen active">
-        <h1>HORDELESS</h1>
-        <button id="btn-play">Play</button>
+        <h1 class="pixel-text">HORDELESS</h1>
+        <div class="menu-buttons">
+            <img src="/Assets/Free/Menu/Buttons/Play.png" id="btn-play" alt="Play" class="pixel-btn" />
+            <img src="/Assets/Free/Menu/Buttons/Levels.png" id="btn-levels" alt="Levels" class="pixel-btn" />
+            <img src="/Assets/Free/Menu/Buttons/Leaderboard.png" id="btn-leaderboard" alt="Leaderboard" class="pixel-btn" />
+            <img src="/Assets/Free/Menu/Buttons/Achievements.png" id="btn-achievements" alt="Achievements" class="pixel-btn" />
+            <img src="/Assets/Free/Menu/Buttons/Settings.png" id="btn-settings" alt="Settings" class="pixel-btn" />
+        </div>
       </div>
 
       <div id="upgrade-menu" class="ui-screen">
         <h2>Skill Preparation</h2>
         <div class="stats-display">
-          <span>Coins: <span id="menu-coins">0</span></span>
+          <span style="color: #4CAF50; font-size: 24px;">Skill Points: <span id="menu-sp">100</span> SP</span>
         </div>
         <div class="upgrade-list">
           <div class="upgrade-item">
-            <span>Swiftness (Speed) Level: <span id="lvl-speed">0</span></span>
-            <button id="btn-upg-speed">Buy (10 C)</button>
+            <span>Double Jump (20 SP)</span>
+            <div class="upgrade-actions">
+              <span id="lvl-djump">OFF</span>
+              <button id="btn-upg-djump">Toggle</button>
+            </div>
           </div>
           <div class="upgrade-item">
-            <span>Spring (Jump) Level: <span id="lvl-jump">0</span></span>
-            <button id="btn-upg-jump">Buy (15 C)</button>
+            <span>Wall Jump (20 SP)</span>
+            <div class="upgrade-actions">
+              <span id="lvl-wjump">OFF</span>
+              <button id="btn-upg-wjump">Toggle</button>
+            </div>
           </div>
           <div class="upgrade-item">
-            <span>Vitality (Health) Level: <span id="lvl-health">0</span></span>
-            <button id="btn-upg-health">Buy (20 C)</button>
+            <span>Swiftness [+Spd] (-20 SP/Lv)</span>
+            <div class="upgrade-actions">
+              <span id="lvl-speed">Lv 0</span>
+              <button id="btn-upg-speed-add" class="small-btn">+</button>
+              <button id="btn-upg-speed-sub" class="small-btn">-</button>
+            </div>
+          </div>
+          <div class="upgrade-item">
+            <span>Vitality [+HP] (-30 SP/Lv)</span>
+            <div class="upgrade-actions">
+              <span id="lvl-health">Lv 0</span>
+              <button id="btn-upg-health-add" class="small-btn">+</button>
+              <button id="btn-upg-health-sub" class="small-btn">-</button>
+            </div>
           </div>
         </div>
         <button id="btn-start-run" class="action-btn">Enter Arena</button>

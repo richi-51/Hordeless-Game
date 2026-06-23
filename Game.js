@@ -20,7 +20,7 @@ export default class Game {
             gameOver: document.getElementById('game-over'),
             
             // Stats
-            menuCoins: document.getElementById('menu-coins'),
+            menuSP: document.getElementById('menu-sp'),
             hudCoins: document.getElementById('hud-coins'),
             hudScore: document.getElementById('hud-score'),
             hudHealth: document.getElementById('hud-health'),
@@ -29,18 +29,22 @@ export default class Game {
             
             // Upgrade Levels
             lvlSpeed: document.getElementById('lvl-speed'),
-            lvlJump: document.getElementById('lvl-jump'),
             lvlHealth: document.getElementById('lvl-health'),
+            lvlDjump: document.getElementById('lvl-djump'),
+            lvlWjump: document.getElementById('lvl-wjump'),
         };
 
-        // Data Persistence
-        this.data = {
-            coins: parseInt(localStorage.getItem('hordeless_coins')) || 0,
-            upgrades: {
-                speed: parseInt(localStorage.getItem('hordeless_upg_speed')) || 0,
-                jump: parseInt(localStorage.getItem('hordeless_upg_jump')) || 0,
-                health: parseInt(localStorage.getItem('hordeless_upg_health')) || 0
-            }
+        // Data Persistence for total coins (for score purposes now)
+        this.totalCoins = parseInt(localStorage.getItem('hordeless_coins')) || 0;
+
+        // Loadout State (Resets every run)
+        this.maxSP = 100;
+        this.currentSP = 100;
+        this.loadout = {
+            speed: 0,
+            health: 0,
+            djump: false,
+            wjump: false
         };
 
         // Session Variables
@@ -52,9 +56,32 @@ export default class Game {
         this.updateUI();
     }
 
+    resetLoadout() {
+        this.currentSP = this.maxSP;
+        this.loadout = { speed: 0, health: 0, djump: false, wjump: false };
+        this.updateUI();
+    }
+
     setupButtons() {
         document.getElementById('btn-play').addEventListener('click', () => {
+            // Play music if not playing
+            const bgMusic = document.getElementById('bg-music');
+            if (bgMusic && bgMusic.paused) {
+                bgMusic.volume = 0.5;
+                bgMusic.play().catch(e => console.log("Audio play blocked by browser", e));
+            }
+            this.resetLoadout();
             this.setState(this.states.UPGRADES);
+        });
+
+        // Add dummy alerts for new menu buttons
+        ['btn-levels', 'btn-leaderboard', 'btn-achievements', 'btn-settings'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    alert(id.replace('btn-', '').toUpperCase() + " coming soon!");
+                });
+            }
         });
 
         document.getElementById('btn-start-run').addEventListener('click', () => {
@@ -65,47 +92,79 @@ export default class Game {
             this.setState(this.states.MENU);
         });
 
-        // Upgrades
-        const upgradeCosts = { speed: 10, jump: 15, health: 20 };
+        // Loadout buttons
+        const costs = { speed: 20, health: 30, djump: 20, wjump: 20 };
         
-        document.getElementById('btn-upg-speed').addEventListener('click', () => {
-            if (this.data.coins >= upgradeCosts.speed) {
-                this.data.coins -= upgradeCosts.speed;
-                this.data.upgrades.speed++;
-                this.saveData();
+        // Double Jump
+        document.getElementById('btn-upg-djump').addEventListener('click', () => {
+            if (this.loadout.djump) {
+                this.loadout.djump = false;
+                this.currentSP += costs.djump;
+            } else if (this.currentSP >= costs.djump) {
+                this.loadout.djump = true;
+                this.currentSP -= costs.djump;
+            }
+            this.updateUI();
+        });
+
+        // Wall Jump
+        document.getElementById('btn-upg-wjump').addEventListener('click', () => {
+            if (this.loadout.wjump) {
+                this.loadout.wjump = false;
+                this.currentSP += costs.wjump;
+            } else if (this.currentSP >= costs.wjump) {
+                this.loadout.wjump = true;
+                this.currentSP -= costs.wjump;
+            }
+            this.updateUI();
+        });
+
+        // Speed
+        document.getElementById('btn-upg-speed-add').addEventListener('click', () => {
+            if (this.loadout.speed < 3 && this.currentSP >= costs.speed) {
+                this.loadout.speed++;
+                this.currentSP -= costs.speed;
                 this.updateUI();
             }
         });
-        document.getElementById('btn-upg-jump').addEventListener('click', () => {
-            if (this.data.coins >= upgradeCosts.jump) {
-                this.data.coins -= upgradeCosts.jump;
-                this.data.upgrades.jump++;
-                this.saveData();
+        document.getElementById('btn-upg-speed-sub').addEventListener('click', () => {
+            if (this.loadout.speed > 0) {
+                this.loadout.speed--;
+                this.currentSP += costs.speed;
                 this.updateUI();
             }
         });
-        document.getElementById('btn-upg-health').addEventListener('click', () => {
-            if (this.data.coins >= upgradeCosts.health) {
-                this.data.coins -= upgradeCosts.health;
-                this.data.upgrades.health++;
-                this.saveData();
+
+        // Health
+        document.getElementById('btn-upg-health-add').addEventListener('click', () => {
+            if (this.loadout.health < 2 && this.currentSP >= costs.health) {
+                this.loadout.health++;
+                this.currentSP -= costs.health;
+                this.updateUI();
+            }
+        });
+        document.getElementById('btn-upg-health-sub').addEventListener('click', () => {
+            if (this.loadout.health > 0) {
+                this.loadout.health--;
+                this.currentSP += costs.health;
                 this.updateUI();
             }
         });
     }
 
     saveData() {
-        localStorage.setItem('hordeless_coins', this.data.coins);
-        localStorage.setItem('hordeless_upg_speed', this.data.upgrades.speed);
-        localStorage.setItem('hordeless_upg_jump', this.data.upgrades.jump);
-        localStorage.setItem('hordeless_upg_health', this.data.upgrades.health);
+        localStorage.setItem('hordeless_coins', this.totalCoins);
     }
 
     updateUI() {
-        this.ui.menuCoins.innerText = this.data.coins;
-        this.ui.lvlSpeed.innerText = this.data.upgrades.speed;
-        this.ui.lvlJump.innerText = this.data.upgrades.jump;
-        this.ui.lvlHealth.innerText = this.data.upgrades.health;
+        if (!this.ui.menuSP) return;
+        this.ui.menuSP.innerText = this.currentSP;
+        this.ui.lvlSpeed.innerText = `Lv ${this.loadout.speed}`;
+        this.ui.lvlHealth.innerText = `Lv ${this.loadout.health}`;
+        this.ui.lvlDjump.innerText = this.loadout.djump ? "ON" : "OFF";
+        this.ui.lvlDjump.style.color = this.loadout.djump ? "#4CAF50" : "white";
+        this.ui.lvlWjump.innerText = this.loadout.wjump ? "ON" : "OFF";
+        this.ui.lvlWjump.style.color = this.loadout.wjump ? "#4CAF50" : "white";
     }
 
     setState(newState) {
@@ -142,9 +201,9 @@ export default class Game {
         this.survivalTime = 0;
         this.sessionCoins = 0;
         
-        // Setup Player Stats based on upgrades
+        // Setup Player Stats based on loadout
         if (this.onStartRun) {
-            this.onStartRun(this.data.upgrades);
+            this.onStartRun(this.loadout);
         }
 
         this.updateHUD();
@@ -152,7 +211,7 @@ export default class Game {
     }
 
     endRun() {
-        this.data.coins += this.sessionCoins;
+        this.totalCoins += this.sessionCoins;
         this.saveData();
         this.setState(this.states.GAMEOVER);
     }
