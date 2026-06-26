@@ -27,7 +27,8 @@ export default class BoxManager {
                 width: 28,
                 height: 24,
                 state: 'idle', // 'idle' or 'breaking'
-                breakTimer: 0
+                breakTimer: 0,
+                isBox: true
             });
         }
     }
@@ -40,41 +41,23 @@ export default class BoxManager {
                 box.breakTimer += deltaTime;
                 if (box.breakTimer > 0.2) { // 200ms break anim
                     this.boxes.splice(i, 1);
-                    // Spawn fruit!
-                    itemsManager.items.push({ x: box.x, y: box.y - 32, width: 32, height: 32 });
-                }
-                continue;
-            }
-
-            // Player hits box from below
-            if (player.vy < 0) {
-                // If player top is hitting box bottom
-                let prevTop = (player.y - player.vy * deltaTime);
-                let currentTop = player.y;
-
-                if (prevTop >= box.y + box.height && currentTop <= box.y + box.height) {
-                    // Check horizontal overlap
-                    if (player.x + player.width > box.x && player.x < box.x + box.width) {
-                        player.y = box.y + box.height;
-                        player.vy = 0; // Bonk!
+                    
+                    // Determine fruit type based on loadout
+                    let type = 'coin';
+                    let r = Math.random();
+                    if (this.game.loadout && r > 0.5) { // 50% chance from box
+                        let options = [];
+                        if (this.game.loadout.rex) options.push('fruit-rex');
+                        if (this.game.loadout.tri) options.push('fruit-tri');
+                        if (this.game.loadout.pengu) options.push('fruit-pengu');
                         
-                        box.state = 'breaking';
-                        this.game.score += 50;
+                        if (options.length > 0) {
+                            type = options[Math.floor(Math.random() * options.length)];
+                        }
                     }
-                }
-            }
-            
-            // Player lands on box
-            if (player.vy >= 0) {
-                let prevBottom = (player.y - player.vy * deltaTime) + player.height;
-                let currentBottom = player.y + player.height;
-
-                if (prevBottom <= box.y && currentBottom >= box.y) {
-                    if (player.x + player.width > box.x && player.x < box.x + box.width) {
-                        player.y = box.y - player.height;
-                        player.vy = 0;
-                        player.grounded = true;
-                    }
+                    
+                    // Spawn fruit!
+                    itemsManager.items.push({ x: box.x, y: box.y - 32, width: 32, height: 32, type: type });
                 }
             }
         }

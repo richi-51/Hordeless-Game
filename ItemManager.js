@@ -1,29 +1,34 @@
 import Sprite from './Sprite.js';
+import { audioManager } from './AudioManager.js';
 
 export default class ItemManager {
-    constructor(gameWidth, gameHeight, game) {
-        this.gameWidth = gameWidth;
+    constructor(gameHeight, game) {
         this.gameHeight = gameHeight;
         this.game = game;
         this.items = [];
         this.spawnTimer = 0;
-        this.spawnInterval = 2; // spawn a fruit every 2 seconds
-        
-        // Using Apple as the coin/item (17 frames)
-        this.sprite = new Sprite('/Assets/Free/Items/Fruits/Apple.png', 32, 32, 17, 0.05);
+        this.spawnInterval = 3;
+
+        this.sprites = {
+            'coin': new Sprite('/Assets/Free/Items/Fruits/Apple.png', 32, 32, 17, 0.05),
+            'fruit-rex': new Sprite('/Assets/Free/Items/Fruits/Pineapple.png', 32, 32, 17, 0.05),
+            'fruit-tri': new Sprite('/Assets/Free/Items/Fruits/Melon.png', 32, 32, 17, 0.05),
+            'fruit-pengu': new Sprite('/Assets/Free/Items/Fruits/Orange.png', 32, 32, 17, 0.05)
+        };
     }
 
-    update(deltaTime, player) {
-        this.sprite.update(deltaTime);
-
-        // Spawning logic
+    update(deltaTime, player, effects) {
         this.spawnTimer += deltaTime;
         if (this.spawnTimer >= this.spawnInterval) {
-            this.spawn();
             this.spawnTimer = 0;
+            // Spawning is handled externally usually, but if dynamic:
+            // this.spawn(levelWidth);
         }
 
-        // Update items & collision
+        for (let s in this.sprites) {
+            this.sprites[s].update(deltaTime);
+        }
+
         for (let i = this.items.length - 1; i >= 0; i--) {
             let item = this.items[i];
 
@@ -33,7 +38,18 @@ export default class ItemManager {
                 player.y < item.y + item.height &&
                 player.y + player.height > item.y) {
                 
-                this.game.addCoin();
+                if (item.type === 'coin') {
+                    this.game.addCoin();
+                    if (player.health < player.maxHealth) {
+                        player.health++;
+                        this.game.updateHUD(player.health);
+                    }
+                } else if (item.type === 'fruit-rex' || item.type === 'fruit-tri' || item.type === 'fruit-pengu') {
+                    player.transform(item.type.replace('fruit-', ''));
+                }
+                
+                audioManager.play('fruit');
+                if (effects) effects.addEffect(item.x, item.y, 'collected');
                 this.items.splice(i, 1);
             }
         }
@@ -41,15 +57,31 @@ export default class ItemManager {
 
     draw(ctx, cameraX) {
         for (let item of this.items) {
-            this.sprite.draw(ctx, item.x - cameraX, item.y);
+            let sprite = this.sprites[item.type] || this.sprites['coin'];
+            sprite.draw(ctx, item.x - cameraX, item.y);
         }
     }
 
     spawn(levelWidth) {
         const y = this.gameHeight - 40 - 32;
-        // Spawn randomly across the level width
         const x = 200 + Math.random() * (levelWidth - 400); 
-        this.items.push({ x, y, width: 32, height: 32 });
+        
+        let type = 'coin';
+        let r = Math.random();
+        
+        // Spawn transformation fruits if upgraded, with some probability
+        if (this.game.loadout && r > 0.8) {
+            let options = [];
+            if (this.game.loadout.rex) options.push('fruit-rex');
+            if (this.game.loadout.tri) options.push('fruit-tri');
+            if (this.game.loadout.pengu) options.push('fruit-pengu');
+            
+            if (options.length > 0) {
+                type = options[Math.floor(Math.random() * options.length)];
+            }
+        }
+
+        this.items.push({ x, y, width: 32, height: 32, type: type });
     }
 
     reset(levelWidth = 3000) {

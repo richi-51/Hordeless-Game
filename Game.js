@@ -1,3 +1,5 @@
+import { audioManager } from './AudioManager.js';
+
 export default class Game {
     constructor(gameWidth, gameHeight) {
         this.gameWidth = gameWidth;
@@ -32,6 +34,9 @@ export default class Game {
             lvlHealth: document.getElementById('lvl-health'),
             lvlDjump: document.getElementById('lvl-djump'),
             lvlWjump: document.getElementById('lvl-wjump'),
+            lvlRex: document.getElementById('lvl-rex'),
+            lvlTri: document.getElementById('lvl-tri'),
+            lvlPengu: document.getElementById('lvl-pengu'),
         };
 
         // Data Persistence for total coins (for score purposes now)
@@ -44,7 +49,10 @@ export default class Game {
             speed: 0,
             health: 0,
             djump: false,
-            wjump: false
+            wjump: false,
+            rex: false,
+            tri: false,
+            pengu: false
         };
 
         // Session Variables
@@ -52,29 +60,95 @@ export default class Game {
         this.survivalTime = 0;
         this.sessionCoins = 0;
         
+        this.currentLevelIndex = 0;
+
         this.setupButtons();
         this.updateUI();
     }
 
     resetLoadout() {
         this.currentSP = this.maxSP;
-        this.loadout = { speed: 0, health: 0, djump: false, wjump: false };
+        this.loadout = { speed: 0, health: 0, djump: false, wjump: false, rex: false, tri: false, pengu: false };
         this.updateUI();
     }
 
     setupButtons() {
-        document.getElementById('btn-play').addEventListener('click', () => {
-            // Play music if not playing
-            const bgMusic = document.getElementById('bg-music');
-            if (bgMusic && bgMusic.paused) {
-                bgMusic.volume = 0.5;
-                bgMusic.play().catch(e => console.log("Audio play blocked by browser", e));
-            }
-            this.resetLoadout();
-            this.setState(this.states.UPGRADES);
+        // Carousel Navigation Logic
+        const carousel = document.getElementById('upgrade-list');
+        const btnPrev = document.getElementById('btn-carousel-prev');
+        const btnNext = document.getElementById('btn-carousel-next');
+        let currentScroll = 0;
+        const cardWidth = 215; // 200px width + 15px gap
+        
+        if (btnPrev && btnNext && carousel) {
+            btnPrev.addEventListener('click', () => {
+                currentScroll -= cardWidth * 2; // scroll 2 cards
+                if (currentScroll < 0) currentScroll = 0;
+                carousel.style.transform = `translateX(-${currentScroll}px)`;
+                audioManager.play('hover');
+            });
+            btnNext.addEventListener('click', () => {
+                // Max scroll is total width - window width
+                let maxScroll = carousel.scrollWidth - carousel.parentElement.clientWidth;
+                if (maxScroll < 0) maxScroll = 0;
+                currentScroll += cardWidth * 2;
+                if (currentScroll > maxScroll) currentScroll = maxScroll;
+                carousel.style.transform = `translateX(-${currentScroll}px)`;
+                audioManager.play('hover');
+            });
+        }
+
+        // Add hover sound to all buttons
+        const allButtons = document.querySelectorAll('button, .pixel-btn');
+        allButtons.forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                audioManager.play('hover');
+            });
         });
 
-        // Add dummy alerts for new menu buttons
+        // Main Play Button now opens Level Select
+        const btnPlay = document.getElementById('btn-play');
+        if (btnPlay) {
+            btnPlay.addEventListener('click', () => {
+                const bgMusic = document.getElementById('bg-music');
+                if (bgMusic && bgMusic.paused) {
+                    bgMusic.volume = 0.2; // Adjust BGM volume here so it's not too loud
+                    bgMusic.play().catch(e => console.log("Audio play blocked by browser", e));
+                }
+                document.getElementById('main-menu').classList.remove('active');
+                document.getElementById('level-menu').classList.add('active');
+            });
+        }
+
+        // Level selection buttons
+        for (let i = 1; i <= 3; i++) {
+            const btn = document.getElementById(`btn-select-lvl${i}`);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    document.getElementById('level-menu').classList.remove('active');
+                    this.currentLevelIndex = i - 1;
+                    this.resetLoadout();
+                    
+                    // Reset carousel position
+                    if (carousel) {
+                        currentScroll = 0;
+                        carousel.style.transform = `translateX(0px)`;
+                    }
+
+                    this.setState(this.states.UPGRADES);
+                });
+            }
+        }
+        
+        const btnBackLevels = document.getElementById('btn-back-levels');
+        if (btnBackLevels) {
+            btnBackLevels.addEventListener('click', () => {
+                document.getElementById('level-menu').classList.remove('active');
+                document.getElementById('main-menu').classList.add('active');
+            });
+        }
+
+        // Add dummy alerts for other menu buttons including Levels
         ['btn-levels', 'btn-leaderboard', 'btn-achievements', 'btn-settings'].forEach(id => {
             const btn = document.getElementById(id);
             if (btn) {
@@ -150,6 +224,22 @@ export default class Game {
                 this.updateUI();
             }
         });
+
+        // Transformations
+        const toggleTransformation = (type) => {
+            if (this.loadout[type]) {
+                this.loadout[type] = false;
+                this.currentSP += 30; // Cost is 30 SP
+            } else if (this.currentSP >= 30) {
+                this.loadout[type] = true;
+                this.currentSP -= 30;
+            }
+            this.updateUI();
+        };
+
+        document.getElementById('btn-upg-rex').addEventListener('click', () => toggleTransformation('rex'));
+        document.getElementById('btn-upg-tri').addEventListener('click', () => toggleTransformation('tri'));
+        document.getElementById('btn-upg-pengu').addEventListener('click', () => toggleTransformation('pengu'));
     }
 
     saveData() {
@@ -165,6 +255,15 @@ export default class Game {
         this.ui.lvlDjump.style.color = this.loadout.djump ? "#4CAF50" : "white";
         this.ui.lvlWjump.innerText = this.loadout.wjump ? "ON" : "OFF";
         this.ui.lvlWjump.style.color = this.loadout.wjump ? "#4CAF50" : "white";
+        
+        if(this.ui.lvlRex) {
+            this.ui.lvlRex.innerText = this.loadout.rex ? "ON" : "OFF";
+            this.ui.lvlRex.style.color = this.loadout.rex ? "#4CAF50" : "white";
+            this.ui.lvlTri.innerText = this.loadout.tri ? "ON" : "OFF";
+            this.ui.lvlTri.style.color = this.loadout.tri ? "#4CAF50" : "white";
+            this.ui.lvlPengu.innerText = this.loadout.pengu ? "ON" : "OFF";
+            this.ui.lvlPengu.style.color = this.loadout.pengu ? "#4CAF50" : "white";
+        }
     }
 
     setState(newState) {
@@ -200,20 +299,28 @@ export default class Game {
         this.score = 0;
         this.survivalTime = 0;
         this.sessionCoins = 0;
+        this.updateHUD();
+
+        this.setState(this.states.PLAYING);
+        audioManager.play('start');
         
         // Setup Player Stats based on loadout
         if (this.onStartRun) {
             this.onStartRun(this.loadout);
         }
-
-        this.updateHUD();
-        this.setState(this.states.PLAYING);
     }
 
     endRun() {
-        this.totalCoins += this.sessionCoins;
-        this.saveData();
         this.setState(this.states.GAMEOVER);
+        audioManager.play('over');
+        
+        this.ui.goScore.innerText = Math.floor(this.score);
+        this.ui.goCoins.innerText = this.sessionCoins;
+        
+        // Add session coins to total
+        this.totalCoins += this.sessionCoins;
+        localStorage.setItem('hordeless_coins', this.totalCoins);
+        this.updateUI();
     }
 
     addCoin() {

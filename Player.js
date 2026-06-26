@@ -44,15 +44,106 @@ export default class Player {
         // Sprites
         const basePath = '/Assets/Free/Main Characters/Virtual Guy';
         this.sprites = {
-            idle: new Sprite(`${basePath}/Idle (32x32).png`, 32, 32, 11, 0.05),
-            run: new Sprite(`${basePath}/Run (32x32).png`, 32, 32, 12, 0.05),
-            jump: new Sprite(`${basePath}/Jump (32x32).png`, 32, 32, 1, 0.1),
-            djump: new Sprite(`${basePath}/Double Jump (32x32).png`, 32, 32, 6, 0.05),
-            wjump: new Sprite(`${basePath}/Wall Jump (32x32).png`, 32, 32, 5, 0.05),
-            fall: new Sprite(`${basePath}/Fall (32x32).png`, 32, 32, 1, 0.1),
-            hit: new Sprite(`${basePath}/Hit (32x32).png`, 32, 32, 7, 0.05)
+            normal: {
+                idle: new Sprite(`${basePath}/Idle (32x32).png`, 32, 32, 11, 0.05),
+                run: new Sprite(`${basePath}/Run (32x32).png`, 32, 32, 12, 0.05),
+                jump: new Sprite(`${basePath}/Jump (32x32).png`, 32, 32, 1, 0.1),
+                djump: new Sprite(`${basePath}/Double Jump (32x32).png`, 32, 32, 6, 0.05),
+                wjump: new Sprite(`${basePath}/Wall Jump (32x32).png`, 32, 32, 5, 0.05),
+                fall: new Sprite(`${basePath}/Fall (32x32).png`, 32, 32, 1, 0.1),
+                hit: new Sprite(`${basePath}/Hit (32x32).png`, 32, 32, 7, 0.05)
+            },
+            rex: {
+                idle: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_idle.png', 128, 128, 5, 0.1),
+                run: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_move.png', 384, 128, 8, 0.05),
+                jump: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_idle.png', 128, 128, 1, 0.1),
+                djump: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_idle.png', 128, 128, 1, 0.1),
+                wjump: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_idle.png', 128, 128, 1, 0.1),
+                fall: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_idle.png', 128, 128, 1, 0.1),
+                attack: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_attack_A.png', 384, 128, 21, 0.05)
+            },
+            tri: {
+                idle: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 6, 0.1),
+                run: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_move.png', 384, 128, 8, 0.05),
+                jump: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 1, 0.1),
+                djump: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 1, 0.1),
+                wjump: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 1, 0.1),
+                fall: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 1, 0.1),
+                attack: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_attack_A.png', 384, 128, 21, 0.05) // Capped at 21 frames (8064 pixels) to prevent 8192 browser texture limit cut off
+            },
+            pengu: {
+                idle: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_idle.png', 128, 128, 5, 0.1),
+                run: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_move.png', 384, 128, 8, 0.05),
+                jump: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_idle.png', 128, 128, 1, 0.1),
+                djump: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_idle.png', 128, 128, 1, 0.1),
+                wjump: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_idle.png', 128, 128, 1, 0.1),
+                fall: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_idle.png', 128, 128, 1, 0.1),
+                attack: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_attack_peck.png', 384, 128, 11, 0.05)
+            }
         };
-        this.currentSprite = this.sprites.idle;
+        this.form = 'normal';
+        this.isAttacking = false;
+        this.attackTimer = 0;
+        this.attackDuration = 0;
+        this.currentSprite = this.sprites.normal.idle;
+        // Load shadow image
+        if (!Player.shadowImage) {
+            Player.shadowImage = new Image();
+            Player.shadowImage.src = '/Assets/Free/Other/Shadow.png';
+        }
+    }
+
+    transform(formName) {
+        if (this.sprites[formName]) {
+            this.form = formName;
+            let oldHeight = this.height;
+            if (formName === 'normal') {
+                this.width = 24;
+                this.height = 24; // Trimmed top transparent pixels for 32x32 frog
+            } else if (formName === 'rex') {
+                this.width = 40;
+                this.height = 48; // Trimmed top transparent pixels for 64x64 rex
+            } else if (formName === 'tri') {
+                this.width = 80;
+                this.height = 36; // Very flat dinosaur
+            } else if (formName === 'pengu') {
+                this.width = 40;
+                this.height = 50;
+            } else {
+                this.width = 32;
+                this.height = 32;
+            }
+            this.y -= (this.height - oldHeight); // Adjust y position so we don't clip into ground
+            this.isAttacking = false; // Reset attack state upon transformation to prevent missing sprite crashes
+        }
+    }
+
+    revertForm() {
+        if (this.form !== 'normal') {
+            this.transform('normal');
+            this.isInvulnerable = true;
+            this.invulnerableTimer = this.invulnerableDuration; // Actually use duration instead of 0
+            this.vy = -300; // Knockback
+        }
+    }
+
+    takeDamage() {
+        if (this.isInvulnerable) return;
+        
+        if (this.form !== 'normal') {
+            this.revertForm();
+            return;
+        }
+
+        this.health--;
+        this.isInvulnerable = true;
+        this.invulnerableTimer = this.invulnerableDuration;
+        this.vy = -300; // Add knockback for normal form too
+        this.game.updateHUD(this.health);
+
+        if (this.health <= 0) {
+            this.game.endRun();
+        }
     }
 
     applyUpgrades(upgrades) {
@@ -68,6 +159,8 @@ export default class Player {
         this.maxJumps = upgrades.djump ? 2 : 1;
         this.canWallJump = upgrades.wjump;
         
+        this.width = 24;
+        this.height = 24;
         this.x = 50;
         this.y = this.gameHeight - this.height - 40;
         this.vx = 0;
@@ -75,37 +168,51 @@ export default class Player {
         this.jumpCount = 0;
     }
 
-    takeDamage() {
-        if (this.invulnerableTimer <= 0) {
-            this.health--;
-            this.game.updateHUD(this.health);
-            this.invulnerableTimer = this.invulnerableDuration;
-            
-            // Knockback
-            this.vy = -300; 
-            
-            if (this.health <= 0) {
-                this.game.endRun();
-            }
-        }
-    }
-
     draw(ctx, cameraX) {
+        if (!this.currentSprite) return;
+        
         if (this.invulnerableTimer > 0) {
             if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
                 return;
             }
         }
         
-        this.currentSprite.draw(ctx, this.x - cameraX, this.y, !this.facingRight);
-    }
-
-    update(input, deltaTime) {
-        if (this.invulnerableTimer > 0) {
-            this.invulnerableTimer -= deltaTime;
+        // Draw Shadow
+        if (Player.shadowImage && Player.shadowImage.complete) {
+            ctx.drawImage(Player.shadowImage, this.x + this.width / 2 - 16 - cameraX, this.y + this.height - 4, 32, 8);
         }
 
-        // --- Horizontal Movement ---
+        ctx.save();
+        
+        let scale = this.form === 'normal' ? 1.0 : 0.5; // Bosses scaled down, main characters 1.0
+        let renderWidth = this.currentSprite.frameWidth * scale;
+        let renderHeight = this.currentSprite.frameHeight * scale;
+
+        let drawX = Math.floor((this.x - cameraX) + (this.width / 2) - (renderWidth / 2));
+        let drawY = Math.floor(this.y + this.height - renderHeight);
+
+        this.currentSprite.draw(ctx, drawX, drawY, !this.facingRight, scale);
+        
+        ctx.restore();
+    }
+
+    update(input, deltaTime, effects) {
+        let wasGrounded = this.grounded;
+        if (this.invulnerableTimer > 0) {
+            this.invulnerableTimer -= deltaTime;
+            if (this.invulnerableTimer <= 0) {
+                this.isInvulnerable = false;
+            }
+        }
+
+        // --- Horizontal Movement & Collision ---
+        if (input.keys.attack && !this.isAttacking && this.form !== 'normal') {
+            this.isAttacking = true;
+            this.attackTimer = this.sprites[this.form].attack.frameCount * this.sprites[this.form].attack.frameDuration;
+            this.sprites[this.form].attack.currentFrame = 0;
+            this.sprites[this.form].attack.frameTimer = 0;
+        }
+
         if (input.keys.right) {
             this.vx += this.acceleration * deltaTime;
             this.facingRight = true;
@@ -113,7 +220,6 @@ export default class Player {
             this.vx -= this.acceleration * deltaTime;
             this.facingRight = false;
         } else {
-            // Deceleration (Friction)
             if (this.vx > 0) {
                 this.vx -= this.friction * deltaTime;
                 if (this.vx < 0) this.vx = 0;
@@ -123,16 +229,13 @@ export default class Player {
             }
         }
         
-        // Cap horizontal speed
         if (this.vx > this.maxSpeed) this.vx = this.maxSpeed;
         if (this.vx < -this.maxSpeed) this.vx = -this.maxSpeed;
 
         this.x += this.vx * deltaTime;
 
-        // Wall Sliding Detection
         this.wallSliding = false;
 
-        // Block against left map edge as a makeshift wall for wall jump testing
         if (this.x < 0) {
             this.x = 0;
             this.vx = 0;
@@ -142,30 +245,36 @@ export default class Player {
             }
         }
         
-        // Check collision against platforms as solid blocks to allow Wall Jump
-        if (input.platforms) {
-            for (let plat of input.platforms) {
-                if (this.y + this.height > plat.y && this.y < plat.y + plat.height) {
-                    // Hitting right side of platform
-                    if (this.vx < 0 && this.x < plat.x + plat.width && this.x + this.width > plat.x + plat.width) {
-                        this.x = plat.x + plat.width;
-                        this.vx = 0;
-                        if (this.canWallJump && !this.grounded && input.keys.left) {
-                            this.wallSliding = true;
-                            this.facingRight = false;
-                        }
-                    }
-                    // Hitting left side of platform
-                    if (this.vx > 0 && this.x + this.width > plat.x && this.x < plat.x) {
-                        this.x = plat.x - this.width;
+        // Collect solid objects
+        let solids = [];
+        if (input.platforms) solids = solids.concat(input.platforms);
+        if (input.boxes) solids = solids.concat(input.boxes);
+
+        // Horizontal Collision
+        for (let solid of solids) {
+            // If bounding boxes overlap (adding a small vertical threshold to prevent floor snags)
+            if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
+                this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y + 4) {
+                    
+                    // Moving right
+                    if (this.vx > 0) {
+                        this.x = solid.x - this.width;
                         this.vx = 0;
                         if (this.canWallJump && !this.grounded && input.keys.right) {
                             this.wallSliding = true;
                             this.facingRight = true;
                         }
                     }
+                    // Moving left
+                    else if (this.vx < 0) {
+                        this.x = solid.x + solid.width;
+                        this.vx = 0;
+                        if (this.canWallJump && !this.grounded && input.keys.left) {
+                            this.wallSliding = true;
+                            this.facingRight = false;
+                        }
+                    }
                 }
-            }
         }
 
         // --- Vertical Movement & Physics ---
@@ -198,7 +307,7 @@ export default class Player {
                 this.jumpCount++;
                 
                 if (this.coyoteCounter <= 0 && this.jumpCount > 1) {
-                    this.sprites.djump.currentFrame = 0; // reset double jump animation
+                    this.sprites[this.form].djump.currentFrame = 0; 
                 }
 
                 input.jumpBufferCounter = 0; 
@@ -207,14 +316,14 @@ export default class Player {
             }
         }
 
-        // Variable Jump Height (cut jump short if key released)
+        // Variable Jump Height
         if (!input.keys.up && this.vy < 0) {
             this.vy *= this.jumpCutMultiplier;
         }
 
         this.y += this.vy * deltaTime;
 
-        // Simple Ground Detection (Platform at bottom)
+        // Ground bounds
         const groundLevel = this.gameHeight - 40; 
         this.grounded = false; 
 
@@ -222,43 +331,77 @@ export default class Player {
             this.y = groundLevel - this.height;
             this.vy = 0;
             this.grounded = true;
+
         }
 
-        // Floating Platforms Collision (only from above)
-        if (input.platforms && this.vy >= 0) { 
-            for (let plat of input.platforms) {
-                let prevBottom = (this.y - this.vy * deltaTime) + this.height;
-                let currentBottom = this.y + this.height;
-
-                if (prevBottom <= plat.y && currentBottom >= plat.y) {
-                    if (this.x + this.width > plat.x && this.x < plat.x + plat.width) {
-                        this.y = plat.y - this.height;
-                        this.vy = 0;
-                        this.grounded = true;
+        // Vertical Collision (Platforms and Boxes)
+        for (let solid of solids) {
+            if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
+                this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y) {
+                
+                // Moving down (falling onto platform)
+                if (this.vy > 0) {
+                    this.y = solid.y - this.height;
+                    this.vy = 0;
+                    this.grounded = true;
+                }
+                // Moving up (hitting head on platform/box)
+                else if (this.vy < 0) {
+                    this.y = solid.y + (solid.height || 24);
+                    this.vy = 0;
+                    if (solid.isBox && solid.state === 'idle') {
+                        solid.state = 'breaking';
                     }
                 }
             }
         }
 
         // Sprite Animation Logic
-        if (this.invulnerableTimer > 0 && this.invulnerableTimer > this.invulnerableDuration - 0.3) {
-             this.currentSprite = this.sprites.hit;
-        } else if (this.wallSliding) {
-             this.currentSprite = this.sprites.wjump;
-        } else if (!this.grounded) {
-            if (this.vy < 0) {
-                if (this.jumpCount > 1) {
-                    this.currentSprite = this.sprites.djump;
+        let activeSprites = this.sprites[this.form];
+        
+        if (this.isAttacking) {
+            this.attackTimer -= deltaTime;
+            this.currentSprite = activeSprites.attack;
+            if (this.attackTimer <= 0) {
+                this.isAttacking = false;
+            }
+        } else if (this.invulnerableTimer > 0 && this.invulnerableTimer > this.invulnerableDuration - 0.3 && this.form === 'normal') {
+             this.currentSprite = activeSprites.hit;
+        } else {
+            // Animation State
+            if (!this.grounded) {
+                if (this.wallSliding) {
+                    this.currentSprite = activeSprites.wjump;
+                } else if (this.jumpCount > 1) {
+                    this.currentSprite = activeSprites.djump;
+                } else if (this.vy < 0) {
+                    this.currentSprite = activeSprites.jump;
                 } else {
-                    this.currentSprite = this.sprites.jump;
+                    this.currentSprite = activeSprites.fall;
                 }
             } else {
-                this.currentSprite = this.sprites.fall;
+                if (Math.abs(this.vx) > 10) {
+                    this.currentSprite = activeSprites.run;
+                } else {
+                    this.currentSprite = activeSprites.idle;
+                }
             }
-        } else if (Math.abs(this.vx) > 0.1) {
-            this.currentSprite = this.sprites.run;
-        } else {
-            this.currentSprite = this.sprites.idle;
+        }
+        
+        if (this.grounded && !wasGrounded && effects) {
+            for (let i=0; i<3; i++) {
+                effects.addEffect(this.x + this.width / 2, this.y + this.height, 'dust');
+            }
+        }
+
+        // Running dust
+        if (this.grounded && Math.abs(this.vx) > 50 && effects) {
+            if (!this.dustTimer) this.dustTimer = 0;
+            this.dustTimer -= deltaTime;
+            if (this.dustTimer <= 0) {
+                effects.addEffect(this.x + this.width / 2, this.y + this.height, 'dust');
+                this.dustTimer = 0.15;
+            }
         }
 
         this.currentSprite.update(deltaTime);

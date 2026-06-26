@@ -4,7 +4,8 @@ export default class InputHandler {
             left: false,
             right: false,
             up: false,
-            jump: false // To track continuous hold
+            jump: false, // To track continuous hold
+            attack: false
         };
         
         // Input Buffering
@@ -23,12 +24,14 @@ export default class InputHandler {
                     break;
                 case 'ArrowUp':
                 case 'KeyW':
-                case 'Space':
                     if (!this.keys.jump) {
                         this.jumpBufferCounter = this.jumpBufferTime; // Start buffer on fresh press
                     }
                     this.keys.up = true;
                     this.keys.jump = true;
+                    break;
+                case 'Space':
+                    this.keys.attack = true;
                     break;
             }
         });
@@ -45,9 +48,11 @@ export default class InputHandler {
                     break;
                 case 'ArrowUp':
                 case 'KeyW':
-                case 'Space':
                     this.keys.up = false;
                     this.keys.jump = false;
+                    break;
+                case 'Space':
+                    this.keys.attack = false;
                     break;
             }
         });

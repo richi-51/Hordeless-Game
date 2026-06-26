@@ -136,33 +136,68 @@ button:hover {
     background-color: #45a049;
 }
 
-.upgrade-list {
+.carousel-container {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 15px;
     margin-bottom: 20px;
-    width: 90%;
-    max-width: 500px;
+    width: 95%;
+    max-width: 800px;
+}
+.carousel-btn {
+    background-color: #4CAF50;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+}
+.carousel-btn:hover { background-color: #45a049; }
+.carousel-window {
+    overflow: hidden; /* Hide the overflow */
+    width: 100%;
+}
+.upgrade-list {
+    display: flex; 
+    flex-direction: row;
+    gap: 15px;
+    transition: transform 0.3s ease;
+    width: max-content; /* take as much width as cards need */
 }
 .upgrade-item {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    justify-content: space-evenly;
     align-items: center;
-    width: 100%;
+    width: 200px;
+    height: 160px;
     background: rgba(255,255,255,0.1);
-    padding: 10px 20px;
+    padding: 10px;
     border-radius: 8px;
+    flex-shrink: 0;
+    text-align: center;
 }
 .upgrade-item span {
-    text-align: left;
-    flex-grow: 1;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.2;
 }
 
 .upgrade-actions {
     display: flex;
     align-items: center;
-    gap: 15px;
-    flex-shrink: 0;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
 }
 
 .upgrade-actions span {

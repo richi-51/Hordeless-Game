@@ -1,4 +1,5 @@
 import Sprite from './Sprite.js';
+import { audioManager } from './AudioManager.js';
 
 export default class EnemyManager {
     constructor(gameWidth, gameHeight, game) {
@@ -11,7 +12,7 @@ export default class EnemyManager {
         this.enemyTypes = [
             { name: 'Mask Dude', sprite: new Sprite(`${basePath}/Mask Dude/Run (32x32).png`, 32, 32, 12, 0.05), type: 'walker', speed: 100 },
             { name: 'Pink Man', sprite: new Sprite(`${basePath}/Pink Man/Run (32x32).png`, 32, 32, 12, 0.05), type: 'runner', speed: 180 },
-            { name: 'Ninja Frog', sprite: new Sprite(`${basePath}/Ninja Frog/Jump (32x32).png`, 32, 32, 1, 0.1), type: 'jumper', speed: 80 }
+            { name: 'Ninja Frog', sprite: new Sprite(`${basePath}/Ninja Frog/Idle (32x32).png`, 32, 32, 11, 0.05), type: 'jumper', speed: 80 }
         ];
         
         // Static enemy positions for the level
@@ -64,7 +65,7 @@ export default class EnemyManager {
                 }
             }
 
-            if (enemy.typeData.type === 'jumper' && grounded) {
+            if (enemy.type.type === 'jumper' && grounded) {
                 if (Math.random() < 0.02) {
                     enemy.vy = -450 - Math.random() * 200; 
                 }
@@ -75,6 +76,29 @@ export default class EnemyManager {
             if (enemy.x > enemy.spawnX + 200) enemy.vx = -Math.abs(enemy.vx);
 
             // Collision with player
+            let attackHitbox = null;
+            if (player.isAttacking) {
+                attackHitbox = {
+                    x: player.facingRight ? player.x : player.x - 60,
+                    y: player.y,
+                    width: player.width + 60,
+                    height: player.height
+                };
+            }
+
+            if (attackHitbox &&
+                attackHitbox.x < enemy.x + enemy.width &&
+                attackHitbox.x + attackHitbox.width > enemy.x &&
+                attackHitbox.y < enemy.y + enemy.height &&
+                attackHitbox.y + attackHitbox.height > enemy.y) {
+                
+                effects.addEffect(enemy.x - 32, enemy.y - 32, 'disappear');
+                this.enemies.splice(i, 1);
+                this.game.score += 200; 
+                audioManager.play('kill');
+                continue;
+            }
+            
             if (player.x < enemy.x + enemy.width &&
                 player.x + player.width > enemy.x &&
                 player.y < enemy.y + enemy.height &&
@@ -82,11 +106,11 @@ export default class EnemyManager {
                 
                 const stompMargin = enemy.height / 2;
                 if (player.vy > 0 && player.y + player.height < enemy.y + stompMargin) {
-                    effects.addEffect(enemy.x, enemy.y, 'disappear');
+                    effects.addEffect(enemy.x - 32, enemy.y - 32, 'disappear');
                     this.enemies.splice(i, 1);
                     this.game.score += 100; 
-                    this.game.updateHUD(player.health);
                     player.vy = -300; 
+                    audioManager.play('kill');
                     continue; 
                 } else {
                     if (player.takeDamage) player.takeDamage();
@@ -96,30 +120,40 @@ export default class EnemyManager {
     }
 
     draw(ctx, cameraX) {
+        // Load shadow image
+        if (!this.shadowImage) {
+            this.shadowImage = new Image();
+            this.shadowImage.src = '/Assets/Free/Other/Shadow.png';
+        }
         for (let enemy of this.enemies) {
-            enemy.typeData.sprite.draw(ctx, enemy.x - cameraX, enemy.y, enemy.vx < 0);
+            if (this.shadowImage && this.shadowImage.complete) {
+                ctx.drawImage(this.shadowImage, enemy.x - cameraX + 8, enemy.y + enemy.height - 4, 16, 8);
+            }
+            enemy.type.sprite.draw(ctx, enemy.x - cameraX, enemy.y, enemy.vx < 0);
         }
     }
 
-    reset(effects) {
+    reset(enemyData, effects) {
         this.enemies = [];
-        const groundY = this.gameHeight - 40 - 32;
+        if (!enemyData) return;
         
-        for (let spawn of this.initialSpawns) {
-            let typeData = this.enemyTypes[spawn.type];
+        for (let e of enemyData) {
+            let typeDef = this.enemyTypes[e.type];
             this.enemies.push({
-                x: spawn.x,
-                y: groundY,
-                spawnX: spawn.x,
+                x: e.x,
+                y: this.gameHeight - 40 - 32, // all on ground for now
+                spawnX: e.x,
                 width: 32,
                 height: 32,
-                vx: -typeData.speed,
+                vx: -typeDef.speed,
                 vy: 0,
-                typeData: typeData
+                type: typeDef,
+                grounded: true,
+                dead: false
             });
-            if (effects) {
-                effects.addEffect(spawn.x, groundY, 'appear');
-            }
+            
+            // Spawn an effect when enemies reset (just for polish)
+            effects.addEffect(e.x + 16, this.gameHeight - 40 - 16, 'appear');
         }
     }
 }

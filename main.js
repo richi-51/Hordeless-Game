@@ -9,12 +9,14 @@ import BoxManager from './BoxManager.js';
 import TrampolineManager from './TrampolineManager.js';
 import Sprite from './Sprite.js';
 
+import { Levels } from './LevelData.js';
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 const GAME_WIDTH = 640;
 const GAME_HEIGHT = 360;
-const LEVEL_WIDTH = 3000;
+let LEVEL_WIDTH = 3000;
 
 canvas.width = GAME_WIDTH;
 canvas.height = GAME_HEIGHT;
@@ -30,10 +32,9 @@ input.platforms = platforms.platforms;
 
 const player = new Player(GAME_WIDTH, GAME_HEIGHT, game);
 const enemies = new EnemyManager(GAME_WIDTH, GAME_HEIGHT, game);
-const items = new ItemManager(GAME_WIDTH, GAME_HEIGHT, game);
+const items = new ItemManager(GAME_HEIGHT, game);
 
 const bgImage = new Image();
-bgImage.src = '/Assets/Free/Background/Blue.png';
 let bgPattern = null;
 bgImage.onload = () => {
     bgPattern = ctx.createPattern(bgImage, 'repeat');
@@ -45,37 +46,52 @@ spikeImage.src = '/Assets/Free/Traps/Spikes/Idle.png'; // 16x16
 // Start and End flags
 const startFlag = new Sprite('/Assets/Free/Items/Checkpoints/Start/Start (Moving) (64x64).png', 64, 64, 17, 0.05);
 const endFlag = new Sprite('/Assets/Free/Items/Checkpoints/End/End (Idle).png', 64, 64, 1, 0.1);
-const startX = 50;
-const endX = LEVEL_WIDTH - 150;
+let startX = 50;
+let endX = LEVEL_WIDTH - 150;
 
 let cameraX = 0;
+let currentLevel = null;
 
 game.onStartRun = (upgrades) => {
     player.applyUpgrades(upgrades);
-    enemies.reset(effects);
+    
+    currentLevel = Levels[game.currentLevelIndex] || Levels[0];
+    
+    bgImage.src = currentLevel.bgImage;
+    LEVEL_WIDTH = currentLevel.length;
+    startX = 50;
+    endX = LEVEL_WIDTH - 150;
+
+    platforms.reset(currentLevel.platforms);
+    enemies.reset(currentLevel.enemies, effects);
     items.reset(LEVEL_WIDTH);
     effects.reset();
-    boxes.reset();
-    trampolines.reset();
+    boxes.reset(currentLevel.boxes);
+    trampolines.reset(currentLevel.trampolines);
+    
+    // Spawn confetti at start for polish
+    effects.addEffect(startX, GAME_HEIGHT - 40, 'confetti');
+    
     cameraX = 0;
 };
 
 let lastTime = 0;
 
 function drawTerrain(ctx, cameraX) {
-    ctx.fillStyle = '#8B4513';
-    // Draw the ground across the whole level
+    if (!currentLevel) return;
+    
+    ctx.fillStyle = currentLevel.terrainColor;
     ctx.fillRect(-cameraX, GAME_HEIGHT - 40, LEVEL_WIDTH, 40); 
     
-    ctx.fillStyle = '#228B22';
+    ctx.fillStyle = currentLevel.grassColor;
     ctx.fillRect(-cameraX, GAME_HEIGHT - 40, LEVEL_WIDTH, 8); 
 
     // Draw Spikes in a specific area
-    if (spikeImage.complete) {
-        for (let i = 0; i < 6; i++) {
-            ctx.drawImage(spikeImage, 600 + i * 16 - cameraX, GAME_HEIGHT - 40 - 16, 16, 16);
-            ctx.drawImage(spikeImage, 1300 + i * 16 - cameraX, GAME_HEIGHT - 40 - 16, 16, 16);
-            ctx.drawImage(spikeImage, 2100 + i * 16 - cameraX, GAME_HEIGHT - 40 - 16, 16, 16);
+    if (spikeImage.complete && currentLevel.spikes) {
+        for (let spikeZone of currentLevel.spikes) {
+            for (let i = 0; i < spikeZone.count; i++) {
+                ctx.drawImage(spikeImage, spikeZone.x + i * 16 - cameraX, GAME_HEIGHT - 40 - 16, 16, 16);
+            }
         }
     }
 }
@@ -105,10 +121,12 @@ function gameLoop(timestamp) {
         effects.update(deltaTime);
         startFlag.update(deltaTime);
         endFlag.update(deltaTime);
+        input.platforms = platforms.platforms;
+        input.boxes = boxes.boxes;
         
-        player.update(input, deltaTime);
+        player.update(input, deltaTime, effects);
         enemies.update(deltaTime, player, platforms.platforms, effects);
-        items.update(deltaTime, player);
+        items.update(deltaTime, player, effects);
         boxes.update(deltaTime, player, items);
         trampolines.update(deltaTime, player);
         game.updateScore(deltaTime);
@@ -121,12 +139,12 @@ function gameLoop(timestamp) {
         if (cameraX > LEVEL_WIDTH - GAME_WIDTH) cameraX = LEVEL_WIDTH - GAME_WIDTH;
 
         // Check Spike Collision
-        if (player.y + player.height >= GAME_HEIGHT - 40 - 16) {
-            // Check against spike zones
-            if ((player.x + player.width > 600 && player.x < 600 + 6*16) ||
-                (player.x + player.width > 1300 && player.x < 1300 + 6*16) ||
-                (player.x + player.width > 2100 && player.x < 2100 + 6*16)) {
-                if (player.takeDamage) player.takeDamage();
+        if (player.y + player.height >= GAME_HEIGHT - 40 - 16 && currentLevel.spikes) {
+            for (let spikeZone of currentLevel.spikes) {
+                if (player.x + player.width > spikeZone.x && player.x < spikeZone.x + spikeZone.count * 16) {
+                    if (player.takeDamage) player.takeDamage();
+                    break;
+                }
             }
         }
 

@@ -5,16 +5,12 @@ export default class TrampolineManager {
         this.trampolines = [];
         this.idleSprite = new Sprite('/Assets/Free/Traps/Trampoline/Idle.png', 28, 28, 1, 0.1);
         this.jumpSprite = new Sprite('/Assets/Free/Traps/Trampoline/Jump (28x28).png', 28, 28, 8, 0.05);
-
-        this.initialData = [
-            { x: 900, y: 360 - 40 - 28 },
-            { x: 1700, y: 360 - 40 - 28 }
-        ];
     }
 
-    reset() {
+    reset(trampolineData) {
         this.trampolines = [];
-        for (let t of this.initialData) {
+        if (!trampolineData) return;
+        for (let t of trampolineData) {
             this.trampolines.push({
                 x: t.x,
                 y: t.y,
@@ -30,26 +26,23 @@ export default class TrampolineManager {
         for (let t of this.trampolines) {
             if (t.state === 'jumping') {
                 t.animTimer += deltaTime;
-                this.jumpSprite.update(deltaTime);
                 if (t.animTimer > 0.4) { // 8 frames * 0.05
                     t.state = 'idle';
                     t.animTimer = 0;
                 }
             }
 
-            // Player lands on trampoline
+            // Player collision with trampoline
             if (player.vy >= 0) {
-                let prevBottom = (player.y - player.vy * deltaTime) + player.height;
-                let currentBottom = player.y + player.height;
-
-                if (prevBottom <= t.y + 10 && currentBottom >= t.y + 10) {
-                    if (player.x + player.width > t.x && player.x < t.x + t.width) {
-                        player.y = t.y + 10 - player.height;
-                        player.vy = -700; // Big bounce!
-                        t.state = 'jumping';
-                        t.animTimer = 0;
-                        this.jumpSprite.currentFrame = 0;
-                    }
+                let playerBottom = player.y + player.height;
+                let playerRight = player.x + player.width;
+                
+                // If player's bottom overlaps the trampoline vertically and they overlap horizontally
+                if (playerBottom >= t.y && playerBottom <= t.y + t.height && playerRight > t.x && player.x < t.x + t.width) {
+                    player.y = t.y - player.height;
+                    player.vy = -750; // Extra smooth big bounce!
+                    t.state = 'jumping';
+                    t.animTimer = 0;
                 }
             }
         }
@@ -60,6 +53,10 @@ export default class TrampolineManager {
             if (t.state === 'idle') {
                 this.idleSprite.draw(ctx, t.x - cameraX, t.y);
             } else {
+                // Calculate frame based on animTimer so it doesn't speed up with multiple trampolines
+                let frameIndex = Math.floor(t.animTimer / 0.05);
+                if (frameIndex > 7) frameIndex = 7;
+                this.jumpSprite.currentFrame = frameIndex;
                 this.jumpSprite.draw(ctx, t.x - cameraX, t.y);
             }
         }
