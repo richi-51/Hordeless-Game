@@ -1,66 +1,112 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hordeless</title>
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <div id="game-container">
       <canvas id="gameCanvas"></canvas>
-      
+
       <!-- Music -->
-      <audio id="bg-music" src="/Assets/bobbeats-8-bit-loop-music-290770.mp3.mpeg" loop></audio>
+      <!-- <audio
+        id="bg-music"
+        src="/Assets/bobbeats-8-bit-loop-music-290770.mp3.mpeg"
+        loop
+      ></audio> -->
 
       <!-- UI Overlays -->
       <div id="main-menu" class="ui-screen active">
         <h1 class="pixel-text">HORDELESS</h1>
         <div class="menu-buttons">
-            <img src="/Assets/Free/Menu/Buttons/Play.png" id="btn-play" alt="Play" class="pixel-btn" />
-            <img src="/Assets/Free/Menu/Buttons/Levels.png" id="btn-levels" alt="Levels" class="pixel-btn" />
-            <img src="/Assets/Free/Menu/Buttons/Leaderboard.png" id="btn-leaderboard" alt="Leaderboard" class="pixel-btn" />
-            <img src="/Assets/Free/Menu/Buttons/Achievements.png" id="btn-achievements" alt="Achievements" class="pixel-btn" />
-            <img src="/Assets/Free/Menu/Buttons/Settings.png" id="btn-settings" alt="Settings" class="pixel-btn" />
+          <img
+            src="/Assets/Free/Menu/Buttons/Play.png"
+            id="btn-play"
+            alt="Play"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Levels.png"
+            id="btn-levels"
+            alt="Levels"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Leaderboard.png"
+            id="btn-leaderboard"
+            alt="Leaderboard"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Achievements.png"
+            id="btn-achievements"
+            alt="Achievements"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Settings.png"
+            id="btn-settings"
+            alt="Settings"
+            class="pixel-btn"
+          />
         </div>
       </div>
 
       <div id="level-menu" class="ui-screen">
-        <h2 style="color:#FFF;">Select Level</h2>
-        <div style="display:flex; flex-direction:column; gap:20px; align-items:center;">
-            <button id="btn-select-lvl1" class="action-btn" style="width: 250px;">Level 1: Grassland</button>
-            <button id="btn-select-lvl2" class="action-btn" style="width: 250px;">Level 2: Dungeon</button>
-            <button id="btn-select-lvl3" class="action-btn" style="width: 250px;">Level 3: Twilight</button>
-            <button id="btn-back-levels" style="margin-top:20px; width:150px;">Back</button>
+        <h2 style="color: #fff">Select Level</h2>
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+          "
+        >
+          <button id="btn-select-lvl1" class="action-btn" style="width: 250px">
+            Level 1: Grassland
+          </button>
+          <button id="btn-select-lvl2" class="action-btn" style="width: 250px">
+            Level 2: Dungeon
+          </button>
+          <button id="btn-select-lvl3" class="action-btn" style="width: 250px">
+            Level 3: Twilight
+          </button>
+          <button id="btn-back-levels" style="margin-top: 20px; width: 150px">
+            Back
+          </button>
         </div>
       </div>
 
       <div id="upgrade-menu" class="ui-screen">
         <h2>Skill Preparation</h2>
         <div class="stats-display">
-          <span style="color: #4CAF50; font-size: 24px;">Skill Points: <span id="menu-sp">100</span> SP</span>
+          <span style="color: #4caf50; font-size: 24px"
+            >Skill Points: <span id="menu-sp">100</span> SP</span
+          >
         </div>
         <div class="carousel-container">
           <button id="btn-carousel-prev" class="carousel-btn">&lt;</button>
           <div class="carousel-window">
             <div class="upgrade-list" id="upgrade-list">
               <div class="upgrade-item">
-                <span>Double Jump<br>(20 SP)</span>
+                <span>Double Jump<br />(20 SP)</span>
                 <div class="upgrade-actions">
                   <span id="lvl-djump">OFF</span>
                   <button id="btn-upg-djump">Toggle</button>
                 </div>
               </div>
               <div class="upgrade-item">
-                <span>Wall Jump<br>(20 SP)</span>
+                <span>Wall Jump<br />(20 SP)</span>
                 <div class="upgrade-actions">
                   <span id="lvl-wjump">OFF</span>
                   <button id="btn-upg-wjump">Toggle</button>
                 </div>
               </div>
               <div class="upgrade-item">
-                <span>Swiftness [+Spd]<br>(-20 SP/Lv)</span>
+                <span>Swiftness [+Spd]<br />(-20 SP/Lv)</span>
                 <div class="upgrade-actions">
                   <span id="lvl-speed">Lv 0</span>
                   <button id="btn-upg-speed-add" class="small-btn">+</button>
@@ -68,28 +114,28 @@
                 </div>
               </div>
               <div class="upgrade-item">
-                <span>Dino Rex Form<br>(30 SP)</span>
+                <span>Dino Rex Form<br />(30 SP)</span>
                 <div class="upgrade-actions">
                   <span id="lvl-rex">OFF</span>
                   <button id="btn-upg-rex">Toggle</button>
                 </div>
               </div>
               <div class="upgrade-item">
-                <span>Dino Tri Form<br>(30 SP)</span>
+                <span>Dino Tri Form<br />(30 SP)</span>
                 <div class="upgrade-actions">
                   <span id="lvl-tri">OFF</span>
                   <button id="btn-upg-tri">Toggle</button>
                 </div>
               </div>
               <div class="upgrade-item">
-                <span>Pengu Form<br>(30 SP)</span>
+                <span>Pengu Form<br />(30 SP)</span>
                 <div class="upgrade-actions">
                   <span id="lvl-pengu">OFF</span>
                   <button id="btn-upg-pengu">Toggle</button>
                 </div>
               </div>
               <div class="upgrade-item">
-                <span>Vitality [+HP]<br>(-30 SP/Lv)</span>
+                <span>Vitality [+HP]<br />(-30 SP/Lv)</span>
                 <div class="upgrade-actions">
                   <span id="lvl-health">Lv 0</span>
                   <button id="btn-upg-health-add" class="small-btn">+</button>
@@ -118,7 +164,7 @@
         <button id="btn-menu">Back to Menu</button>
       </div>
     </div>
-    
+
     <script type="module" src="/main.js"></script>
   </body>
 </html>

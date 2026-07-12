@@ -18,9 +18,10 @@ export default class BoxManager {
         ];
     }
 
-    reset() {
+    reset(levelBoxes = null) {
         this.boxes = [];
-        for (let b of this.initialBoxes) {
+        const boxesToLoad = Array.isArray(levelBoxes) ? levelBoxes : this.initialBoxes;
+        for (let b of boxesToLoad) {
             this.boxes.push({
                 x: b.x,
                 y: b.y,
