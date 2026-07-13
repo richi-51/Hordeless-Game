@@ -43,17 +43,17 @@ export const Levels = [
       { x: 400, y: 240, width: 64, height: 8 }, // collision height only 8 (visual rendered as thick)
       { x: 600, y: 160, width: 64, height: 8 },
       { x: 900, y: 240, width: 128, height: 8 },
-      { x: 1300, y: 100, width: 64, height: 8 },
+      { x: 1400, y: 100, width: 64, height: 8 },
       { x: 1600, y: 200, width: 64, height: 8 },
       { x: 1900, y: 240, width: 128, height: 8 },
       { x: 2300, y: 140, width: 64, height: 8 },
-      { x: 2800, y: 240, width: 128, height: 8 },
-      { x: 3300, y: 180, width: 96, height: 8 },
+      { x: 2500, y: 240, width: 128, height: 8 },
+      { x: 3100, y: 180, width: 96, height: 8 },
     ],
     boxes: [
-      { x: 610, y: 100 },
-      { x: 1920, y: 150 },
-      { x: 2820, y: 150 },
+      { x: 610, y: 70 },
+      { x: 1400, y: 20 },
+      { x: 2520, y: 150 },
     ],
     enemies: [
       { x: 800, type: 2 }, // Ninja Frog
@@ -66,11 +66,11 @@ export const Levels = [
       { x: 500, count: 6 },
       { x: 1050, count: 10 },
       { x: 2050, count: 12 },
-      { x: 3000, count: 10 },
+      { x: 3000, count: 8 },
     ],
     trampolines: [
       { x: 1500, y: 292 },
-      { x: 2400, y: 292 },
+      { x: 2930, y: 292 },
     ],
   },
   {
