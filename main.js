@@ -2,6 +2,7 @@ import InputHandler from "./InputHandler.js";
 import Player from "./Player.js";
 import Game from "./Game.js";
 import EnemyManager from "./EnemyManager.js";
+import BossManager from "./BossManager.js";
 import ItemManager from "./ItemManager.js";
 import PlatformManager from "./PlatformManager.js";
 import EffectManager from "./EffectManager.js";
@@ -32,6 +33,7 @@ input.platforms = platforms.platforms;
 
 const player = new Player(GAME_WIDTH, GAME_HEIGHT, game);
 const enemies = new EnemyManager(GAME_WIDTH, GAME_HEIGHT, game);
+const bossManager = new BossManager(GAME_WIDTH, GAME_HEIGHT, game);
 const items = new ItemManager(GAME_HEIGHT, game);
 
 const bgImage = new Image();
@@ -78,6 +80,7 @@ game.onStartRun = (upgrades) => {
 
   platforms.reset(currentLevel.platforms);
   enemies.reset(currentLevel.enemies, effects);
+  bossManager.reset(currentLevel, player);
   items.reset(LEVEL_WIDTH);
   effects.reset();
   boxes.reset(currentLevel.boxes);
@@ -89,14 +92,8 @@ game.onStartRun = (upgrades) => {
   cameraX = 0;
 };
 
-//Buat ujicoba aja
-game.currentLevelIndex = 1; // Level 2
-game.resetLoadout();
-game.loadout.djump = true; // Double jump
-game.loadout.wjump = true; // Wall jump
-game.loadout.rex = true; // Dino Rex form
-game.onStartRun(game.loadout);
-game.setState(game.states.PLAYING);
+// Normal game flow starts from menu and level 1 prep only.
+// Debug auto-start removed.
 window.addEventListener("keydown", (e) => {
   if (e.key === "m" || e.key === "M") {
     overviewMode = !overviewMode;
@@ -196,6 +193,12 @@ function gameLoop(timestamp) {
   } else {
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
   }
+  if (bossManager.redAlpha > 0) {
+    ctx.save();
+    ctx.fillStyle = `rgba(200, 0, 0, ${bossManager.redAlpha})`;
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    ctx.restore();
+  }
 
   if (overviewMode) {
     const scale = GAME_WIDTH / LEVEL_WIDTH;
@@ -240,6 +243,7 @@ function gameLoop(timestamp) {
 
     player.update(input, deltaTime, effects);
     enemies.update(deltaTime, player, platforms.platforms, effects);
+    bossManager.update(deltaTime, player, platforms.platforms, effects);
     items.update(deltaTime, player, effects);
     boxes.update(deltaTime, player, items);
     trampolines.update(deltaTime, player);
@@ -250,8 +254,16 @@ function gameLoop(timestamp) {
       cameraX = player.x - GAME_WIDTH / 2 + player.width / 2;
 
       if (cameraX < 0) cameraX = 0;
-      if (cameraX > LEVEL_WIDTH - GAME_WIDTH)
+      if (bossManager.boss && bossManager.boss.alive && bossManager.triggered) {
+        const bossLock =
+          bossManager.boss.x -
+          GAME_WIDTH / 2 +
+          bossManager.boss.width / 2 +
+          120;
+        if (cameraX > bossLock) cameraX = bossLock;
+      } else if (cameraX > LEVEL_WIDTH - GAME_WIDTH) {
         cameraX = LEVEL_WIDTH - GAME_WIDTH;
+      }
     }
 
     // Check Spike Collision
@@ -275,9 +287,17 @@ function gameLoop(timestamp) {
       player.x + player.width > endX &&
       player.y + player.height >= GAME_HEIGHT - 40 - 64
     ) {
-      // Level Complete!
-      game.score += 500; // Bonus for completing
-      game.endRun();
+      if (!bossManager.boss || !bossManager.boss.alive) {
+        if (game.currentLevelIndex === 0) {
+          // Completed Level 1, move to Level 2 preparation
+          game.score += 500; // Bonus for completing level 1
+          game.prepareLevel(1);
+        } else {
+          game.score += 500; // Bonus for completing level 2
+          game.victory = true;
+          game.endRun();
+        }
+      }
     }
 
     // Render everything with cameraX offset
@@ -290,6 +310,7 @@ function gameLoop(timestamp) {
     trampolines.draw(ctx, cameraX);
     items.draw(ctx, cameraX);
     enemies.draw(ctx, cameraX);
+    bossManager.draw(ctx, cameraX);
     effects.draw(ctx, cameraX);
     player.draw(ctx, cameraX);
   }

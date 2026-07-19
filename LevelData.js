@@ -38,9 +38,9 @@ export const Levels = [
     bgImage: "/Assets/Free/Background/Brown.png",
     terrainColor: "#4a4a4a", // dark grey
     grassColor: "#2b2b2b",
-    length: 4000,
+    length: 5400,
     platforms: [
-      { x: 400, y: 240, width: 64, height: 8 }, // collision height only 8 (visual rendered as thick)
+      { x: 400, y: 260, width: 64, height: 8 }, // collision height only 8 (visual rendered as thick)
       { x: 600, y: 160, width: 64, height: 8 },
       { x: 900, y: 240, width: 128, height: 8 },
       { x: 1400, y: 100, width: 64, height: 8 },
@@ -49,6 +49,8 @@ export const Levels = [
       { x: 2300, y: 140, width: 64, height: 8 },
       { x: 2500, y: 240, width: 128, height: 8 },
       { x: 3100, y: 180, width: 96, height: 8 },
+      { x: 4480, y: 240, width: 96, height: 8 },
+      // { x: 4540, y: 140, width: 96, height: 8 },
     ],
     boxes: [
       { x: 610, y: 70 },
@@ -72,6 +74,12 @@ export const Levels = [
       { x: 1500, y: 292 },
       { x: 2930, y: 292 },
     ],
+    boss: {
+      x: 4600,
+      y: 240,
+      health: 20,
+      triggerX: 4100,
+    },
   },
   {
     name: "Level 3: Twilight",

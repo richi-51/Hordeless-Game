@@ -12,15 +12,29 @@
       <canvas id="gameCanvas"></canvas>
 
       <!-- Music -->
-      <!-- <audio
+      <audio
         id="bg-music"
         src="/Assets/bobbeats-8-bit-loop-music-290770.mp3.mpeg"
         loop
-      ></audio> -->
+      ></audio>
 
       <!-- UI Overlays -->
       <div id="main-menu" class="ui-screen active">
         <h1 class="pixel-text">HORDELESS</h1>
+
+        <div id="settings-panel" class="settings-panel">
+          <h3>Audio Settings</h3>
+          <div class="settings-option">
+            <span>Music</span>
+            <button id="toggle-music" class="toggle-btn">On</button>
+          </div>
+          <div class="settings-option">
+            <span>Sound</span>
+            <button id="toggle-sound" class="toggle-btn">On</button>
+          </div>
+          <button id="btn-settings-close" class="action-btn">Back</button>
+        </div>
+
         <div class="menu-buttons">
           <img
             src="/Assets/Free/Menu/Buttons/Play.png"
@@ -146,10 +160,13 @@
           </div>
           <button id="btn-carousel-next" class="carousel-btn">&gt;</button>
         </div>
-        <button id="btn-start-run" class="action-btn">Enter Arena</button>
+        <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <button id="btn-start-run" class="action-btn">Enter Arena</button>
+          <button id="btn-back-upgrades" class="action-btn" style="background-color: #4CAF50;">Back</button>
+        </div>
       </div>
-
       <div id="hud" class="ui-screen">
+
         <div class="hud-top">
           <div class="hud-stat">Health: <span id="hud-health">3</span></div>
           <div class="hud-stat">Score: <span id="hud-score">0</span></div>
