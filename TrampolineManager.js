@@ -1,4 +1,5 @@
-import Sprite from "./Sprite.js";
+import Sprite from './Sprite.js';
+import { audioManager } from './AudioManager.js';
 
 export default class TrampolineManager {
   constructor() {
@@ -19,52 +20,56 @@ export default class TrampolineManager {
     );
   }
 
-  reset(trampolineData) {
-    this.trampolines = [];
-    if (!trampolineData) return;
-    for (let t of trampolineData) {
-      this.trampolines.push({
-        x: t.x,
-        y: t.y,
-        width: 28,
-        height: 28,
-        state: "idle", // 'idle' or 'jumping'
-        animTimer: 0,
-      });
-    }
-  }
-
-  update(deltaTime, player) {
-    for (let t of this.trampolines) {
-      if (t.state === "jumping") {
-        t.animTimer += deltaTime;
-        if (t.animTimer > 0.4) {
-          // 8 frames * 0.05
-          t.state = "idle";
-          t.animTimer = 0;
+    reset(trampolineData) {
+        this.trampolines = [];
+        if (!trampolineData) return;
+        for (let t of trampolineData) {
+            this.trampolines.push({
+                x: t.x,
+                y: t.y,
+                width: 28,
+                height: 28,
+                state: 'idle', // 'idle' or 'jumping'
+                animTimer: 0,
+                cooldown: 0
+            });
         }
-      }
-
-      // Player collision with trampoline
-      if (player.vy >= 0) {
-        let playerBottom = player.y + player.height;
-        let playerRight = player.x + player.width;
-
-        // If player's bottom overlaps the trampoline vertically and they overlap horizontally
-        if (
-          playerBottom >= t.y &&
-          playerBottom <= t.y + t.height &&
-          playerRight > t.x &&
-          player.x < t.x + t.width
-        ) {
-          player.y = t.y - player.height;
-          player.vy = -750; // Extra smooth big bounce!
-          t.state = "jumping";
-          t.animTimer = 0;
-        }
-      }
     }
-  }
+
+    update(deltaTime, player) {
+        for (let t of this.trampolines) {
+            if (t.state === 'jumping') {
+                t.animTimer += deltaTime;
+                if (t.animTimer > 0.5) {
+                    t.state = 'idle';
+                    t.animTimer = 0;
+                }
+            }
+
+            if (t.cooldown > 0) {
+                t.cooldown -= deltaTime;
+                if (t.cooldown < 0) t.cooldown = 0;
+            }
+
+            // Player collision with trampoline
+            if (player.vy >= 0 && t.cooldown <= 0) {
+                let playerBottom = player.y + player.height;
+                let playerRight = player.x + player.width;
+                
+                // If player's bottom overlaps the trampoline vertically and they overlap horizontally
+                if (playerBottom >= t.y && playerBottom <= t.y + t.height && playerRight > t.x && player.x < t.x + t.width) {
+                    player.y = t.y - player.height;
+                    player.vy = -850;
+                    player.trampolineBoostTimer = 0.22;
+                    player.grounded = false;
+                    audioManager.play('trampoline');
+                    t.state = 'jumping';
+                    t.animTimer = 0;
+                    t.cooldown = 0.25;
+                }
+            }
+        }
+    }
 
   draw(ctx, cameraX) {
     for (let t of this.trampolines) {
