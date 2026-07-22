@@ -5,7 +5,8 @@ export class AudioManager {
             over: new Audio('/Assets/game-over-sfx.mp3.mpeg'),
             hover: new Audio('/Assets/menu-hover.mp3.mpeg'),
             kill: new Audio('/Assets/mixkit-small-hit-in-a-game-2072.wav'),
-            fruit: new Audio('/Assets/mixkit-winning-an-extra-bonus-2060.wav')
+            fruit: new Audio('/Assets/mixkit-winning-an-extra-bonus-2060.wav'),
+            trampoline: new Audio('/Assets/8-Bit Jump Sound Effect.mp3')
         };
         
         // Set volumes for SFX so they are clear but not overpowering
@@ -14,6 +15,7 @@ export class AudioManager {
         this.sounds.hover.volume = 0.4;
         this.sounds.kill.volume = 0.5;
         this.sounds.fruit.volume = 0.3; // Lowered volume
+        this.sounds.trampoline.volume = 0.45;
     }
     
     play(name) {

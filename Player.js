@@ -19,6 +19,7 @@ export default class Player {
         this.friction = 300;     // Decreased to show deceleration (sliding) clearly
         this.gravity = 1200;
         this.jumpStrength = this.baseJumpStrength;
+        this.trampolineBoostTimer = 0;
         
         this.health = this.baseMaxHealth;
         this.invulnerableTimer = 0;
@@ -278,7 +279,14 @@ export default class Player {
         }
 
         // --- Vertical Movement & Physics ---
-        this.vy += this.gravity * deltaTime;
+        let effectiveGravity = this.gravity;
+        if (this.trampolineBoostTimer > 0) {
+            effectiveGravity *= 0.65;
+            this.trampolineBoostTimer -= deltaTime;
+            if (this.trampolineBoostTimer < 0) this.trampolineBoostTimer = 0;
+        }
+
+        this.vy += effectiveGravity * deltaTime;
 
         if (this.wallSliding) {
             if (this.vy > this.wallSlideSpeed) {
