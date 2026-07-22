@@ -39,12 +39,23 @@ export default class Game {
       lvlPengu: document.getElementById("lvl-pengu"),
     };
 
-    // Data Persistence for total coins (for score purposes now)
-    this.totalCoins = parseInt(localStorage.getItem("hordeless_coins")) || 0;
+    // Persistent skill point bank
+    const storedSkillPoints = Number.parseInt(
+      localStorage.getItem("hordeless_skill_points"),
+      10,
+    );
+    const legacySkillPoints = Number.parseInt(
+      localStorage.getItem("hordeless_coins"),
+      10,
+    );
+    this.totalSkillPoints = Number.isNaN(storedSkillPoints)
+      ? Number.isNaN(legacySkillPoints)
+        ? 20
+        : legacySkillPoints
+      : storedSkillPoints;
 
     // Loadout State (Resets every run)
-    this.maxSP = 100;
-    this.currentSP = 100;
+    this.currentSP = this.totalSkillPoints;
     this.loadout = {
       speed: 0,
       health: 0,
@@ -58,7 +69,7 @@ export default class Game {
     // Session Variables
     this.score = 0;
     this.survivalTime = 0;
-    this.sessionCoins = 0;
+    this.sessionSkillPoints = 0;
 
     this.currentLevelIndex = 0;
     this.audioSettings = {
@@ -73,23 +84,24 @@ export default class Game {
   }
 
   resetLoadout() {
-    this.currentSP = this.maxSP;
-    this.loadout = {
-      speed: 0,
-      health: 0,
-      djump: false,
-      wjump: false,
-      rex: false,
-      tri: false,
-      pengu: false,
-    };
     this.updateUI();
   }
 
   prepareLevel(levelIndex = 0) {
     this.currentLevelIndex = levelIndex;
+    this.bankSessionSkillPoints();
     this.resetLoadout();
     this.setState(this.states.UPGRADES);
+  }
+
+  bankSessionSkillPoints() {
+    if (this.sessionSkillPoints <= 0) return;
+
+    this.totalSkillPoints += this.sessionSkillPoints;
+    this.sessionSkillPoints = 0;
+    this.currentSP = this.totalSkillPoints;
+    this.saveData();
+    this.updateUI();
   }
 
   setupButtons() {
@@ -359,7 +371,7 @@ export default class Game {
   }
 
   saveData() {
-    localStorage.setItem("hordeless_coins", this.totalCoins);
+    localStorage.setItem("hordeless_skill_points", this.totalSkillPoints);
   }
 
   updateUI() {
@@ -410,7 +422,7 @@ export default class Game {
           header.innerText = this.victory ? "YOU WIN!!!!" : "GAME OVER";
         }
         this.ui.goScore.innerText = Math.floor(this.score);
-        this.ui.goCoins.innerText = this.sessionCoins;
+        this.ui.goCoins.innerText = this.sessionSkillPoints;
         break;
     }
   }
@@ -418,7 +430,7 @@ export default class Game {
   startRun() {
     this.victory = false;
     this.survivalTime = 0;
-    this.sessionCoins = 0;
+    this.sessionSkillPoints = 0;
     this.updateHUD();
 
     this.setState(this.states.PLAYING);
@@ -431,6 +443,8 @@ export default class Game {
   }
 
   endRun() {
+    this.bankSessionSkillPoints();
+
     const heavenlySound = audioManager.sounds?.heavenly;
     const shouldDelayGameOver =
       heavenlySound &&
@@ -444,9 +458,7 @@ export default class Game {
           this.setState(this.states.GAMEOVER);
           audioManager.play(audioKey);
           this.ui.goScore.innerText = Math.floor(this.score);
-          this.ui.goCoins.innerText = this.sessionCoins;
-          this.totalCoins += this.sessionCoins;
-          localStorage.setItem("hordeless_coins", this.totalCoins);
+          this.ui.goCoins.innerText = this.sessionSkillPoints;
           this.updateUI();
         },
         (heavenlySound.duration - heavenlySound.currentTime + 1.0) * 1000,
@@ -456,16 +468,12 @@ export default class Game {
 
     this.setState(this.states.GAMEOVER);
     audioManager.play(audioKey);
-
-    // Add session coins to total
-    this.totalCoins += this.sessionCoins;
-    localStorage.setItem("hordeless_coins", this.totalCoins);
     this.updateUI();
   }
 
-  addCoin() {
-    this.sessionCoins++;
-    this.score += 50; // Points for coin
+  addSkillPoint() {
+    this.sessionSkillPoints++;
+    this.score += 50; // Keep the score reward for collecting fruit
     this.updateHUD();
   }
 
@@ -477,7 +485,7 @@ export default class Game {
 
   updateHUD(health = 0) {
     this.ui.hudScore.innerText = Math.floor(this.score);
-    this.ui.hudCoins.innerText = this.sessionCoins;
+    this.ui.hudCoins.innerText = this.sessionSkillPoints;
     if (health !== 0) {
       this.ui.hudHealth.innerText = health;
     }

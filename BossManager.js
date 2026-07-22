@@ -120,6 +120,9 @@ export default class BossManager {
       this.sprites[key].update(deltaTime);
     }
 
+    this.boss.facingRight =
+      player.x + player.width / 2 > this.boss.x + this.boss.width / 2;
+
     if (!this.boss.alive) {
       if (this.boss.state === "death") {
         this.boss.stateTimer += deltaTime;
@@ -134,30 +137,6 @@ export default class BossManager {
       return;
     }
 
-    // Prevent passing behind boss while alive by clamping crossing based on previous position
-    if (player.prevX !== undefined) {
-      const prevRight = player.prevX + player.width;
-      const prevLeft = player.prevX;
-      const curRight = player.x + player.width;
-      const curLeft = player.x;
-
-      // Approaching from left
-      if (prevRight <= this.boss.x && curRight > this.boss.x) {
-        // block horizontal crossing
-        player.x = this.boss.x - player.width;
-        player.vx = 0;
-      }
-      // Approaching from right
-      if (
-        prevLeft >= this.boss.x + this.boss.width &&
-        curLeft < this.boss.x + this.boss.width
-      ) {
-        player.x = this.boss.x + this.boss.width;
-        player.vx = 0;
-      }
-    }
-
-    // Stomp detection: only when player is falling and crosses boss visible top between frames
     const prevBottom =
       player.prevY !== undefined
         ? player.prevY + player.height
@@ -166,22 +145,72 @@ export default class BossManager {
     const visibleBounds = this.getFrameBounds();
     const bossTop = this.boss.y + visibleBounds.top;
     const bossBottom = this.boss.y + visibleBounds.bottom;
+    const overlappingX =
+      player.x + player.width > this.boss.x &&
+      player.x < this.boss.x + this.boss.width;
+    const bossBarrierX = this.boss.x + this.boss.width;
+    const bossBarrierY = bossTop;
+    const bossBarrierWidth = 64;
+    const bossBarrierHeight = Math.max(0, this.gameHeight - 40 - bossBarrierY);
+
+    // Prevent passing through the boss body from the sides, but leave the top open for stomps.
+    if (player.prevX !== undefined) {
+      const prevRight = player.prevX + player.width;
+      const prevLeft = player.prevX;
+      const curRight = player.x + player.width;
+      const curLeft = player.x;
+      const playerBottom = player.y + player.height;
+      const topTolerance = 8;
+
+      // Approaching from left while still at body height
+      if (
+        prevRight <= this.boss.x &&
+        curRight > this.boss.x &&
+        playerBottom > bossTop + topTolerance
+      ) {
+        // block horizontal crossing
+        player.x = this.boss.x - player.width;
+        player.vx = 0;
+      }
+      // Approaching from right while still at body height
+      if (
+        prevLeft >= this.boss.x + this.boss.width &&
+        curLeft < this.boss.x + this.boss.width &&
+        playerBottom > bossTop + topTolerance
+      ) {
+        player.x = this.boss.x + this.boss.width;
+        player.vx = 0;
+      }
+    }
+
+    // Invisible wall behind the boss: prevents the player from crossing past it until the boss is defeated.
+    if (
+      player.x + player.width > bossBarrierX &&
+      player.x < bossBarrierX + bossBarrierWidth &&
+      player.y + player.height > bossBarrierY &&
+      player.y < bossBarrierY + bossBarrierHeight
+    ) {
+      player.x = bossBarrierX - player.width;
+      player.vx = 0;
+    }
+
+    // Stomp detection: only when player is falling and crosses boss visible top between frames
     const crossedTop = prevBottom <= bossTop && currBottom >= bossTop;
 
     if (
       crossedTop &&
       player.vy > 0 &&
-      player.x + player.width > this.boss.x &&
-      player.x < this.boss.x + this.boss.width
+      overlappingX
     ) {
       // damage 1 for normal stomp; if player is in a powered attack animation, allow 2
       const damage = player.form === "normal" ? 1 : player.isAttacking ? 2 : 1;
       this.boss.health -= damage;
       this.boss.state = "hurt";
       this.boss.stateTimer = 0;
-      player.vy = -280;
-      // place player standing on top of visible boss graphic
+      player.vy = -320;
       player.y = bossTop - player.height;
+      player.vx = this.boss.facingRight ? 160 : -160;
+      // place player standing on top of visible boss graphic
       player.attackHitRegistered = true;
       effects.addEffect(
         this.boss.x + this.boss.width / 2,
@@ -215,7 +244,7 @@ export default class BossManager {
         this.boss.stateTimer = 0;
       }
     } else if (this.boss.state === "attack") {
-      if (this.boss.stateTimer > 0.7) {
+      if (this.boss.stateTimer > 1) {
         this.fireProjectile(player);
         this.boss.state = "flying";
         this.boss.stateTimer = 0;
@@ -232,7 +261,20 @@ export default class BossManager {
 
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const proj = this.projectiles[i];
-      proj.vy += 1200 * deltaTime;
+      proj.lifeTime += deltaTime;
+
+      if (proj.lifeTime < proj.homingDuration) {
+        const targetX = player.x + player.width / 2;
+        const targetY = player.y + player.height / 2;
+        const dx = targetX - (proj.x + proj.width / 2);
+        const dy = targetY - (proj.y + proj.height / 2);
+        const distance = Math.max(1, Math.hypot(dx, dy));
+        proj.vx = (dx / distance) * proj.speed;
+        proj.vy = (dy / distance) * proj.speed;
+      }
+
+      proj.flipX = proj.vx > 0;
+
       proj.x += proj.vx * deltaTime;
       proj.y += proj.vy * deltaTime;
 
@@ -303,11 +345,10 @@ export default class BossManager {
     const targetY = player.y + player.height / 2;
     const dx = targetX - (this.boss.x + this.boss.width / 2);
     const dy = targetY - (this.boss.y + this.boss.height / 2);
-    const distance = Math.max(1, Math.abs(dx));
-    const speed = 240;
-    let vx = (dx / distance) * speed;
-    if (Math.abs(vx) < 120) vx = dx < 0 ? -120 : 120;
-    const vy = Math.min(350, dy * 0.55);
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const speed = 190;
+    const vx = (dx / distance) * speed;
+    const vy = (dy / distance) * speed;
 
     this.projectiles.push({
       x: originX,
@@ -316,6 +357,10 @@ export default class BossManager {
       vy,
       width: 48,
       height: 32,
+      speed,
+      lifeTime: 0,
+      homingDuration: 0.5,
+      flipX: vx > 0,
     });
   }
 
@@ -365,7 +410,17 @@ export default class BossManager {
     );
 
     for (let proj of this.projectiles) {
-      this.sprites.projectile.draw(ctx, proj.x - cameraX, proj.y);
+      if (!this.sprites.projectile.image.complete) continue;
+
+      const sprite = this.sprites.projectile;
+      sprite.draw(
+        ctx,
+        proj.x - cameraX,
+        proj.y,
+        proj.flipX,
+        proj.width / sprite.frameWidth,
+        proj.height / sprite.frameHeight,
+      );
     }
   }
 }
