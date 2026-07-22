@@ -310,6 +310,8 @@ export default class Player {
 
         // Horizontal Collision
         for (let solid of solids) {
+            if (solid.oneWay) continue;
+
             // If bounding boxes overlap (adding a small vertical threshold to prevent floor snags)
             if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
                 this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y + 4) {
@@ -404,6 +406,15 @@ export default class Player {
         for (let solid of solids) {
             if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
                 this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y) {
+
+                if (solid.oneWay) {
+                    const prevBottom = this.prevY + this.height;
+                    const solidTop = solid.y;
+
+                    if (this.vy <= 0 || prevBottom > solidTop + 4) {
+                        continue;
+                    }
+                }
                 
                 // Moving down (falling onto platform)
                 if (this.vy > 0) {

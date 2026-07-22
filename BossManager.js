@@ -82,6 +82,8 @@ export default class BossManager {
     this.boss = null;
 
     if (level && level.boss) {
+      const arenaLeftX = Math.max(0, level.boss.x - 480);
+      const arenaRightX = level.boss.x + 120;
       this.boss = {
         x: level.boss.x,
         y: level.boss.y,
@@ -97,6 +99,13 @@ export default class BossManager {
         deathEnded: false,
         facingRight: false,
         triggerX: level.boss.triggerX || level.boss.x - 400,
+        arenaLeftX,
+        arenaRightX,
+        cameraLockX: arenaLeftX,
+        fightTimer: 0,
+        patrolActive: false,
+        patrolDirection: -1,
+        patrolSpeed: 70,
       };
     }
   }
@@ -122,6 +131,24 @@ export default class BossManager {
 
     this.boss.facingRight =
       player.x + player.width / 2 > this.boss.x + this.boss.width / 2;
+
+    this.boss.fightTimer += deltaTime;
+    if (this.boss.fightTimer >= 10) {
+      this.boss.patrolActive = true;
+    }
+
+    if (this.boss.patrolActive) {
+      this.boss.x += this.boss.patrolDirection * this.boss.patrolSpeed * deltaTime;
+      const minX = this.boss.arenaLeftX + 140;
+      const maxX = this.boss.arenaRightX - this.boss.width;
+      if (this.boss.x <= minX) {
+        this.boss.x = minX;
+        this.boss.patrolDirection = 1;
+      } else if (this.boss.x >= maxX) {
+        this.boss.x = maxX;
+        this.boss.patrolDirection = -1;
+      }
+    }
 
     if (!this.boss.alive) {
       if (this.boss.state === "death") {
@@ -194,6 +221,16 @@ export default class BossManager {
       player.vx = 0;
     }
 
+    // Left-side invisible wall keeps the player inside the boss arena until the boss is defeated.
+    if (
+      player.x < this.boss.arenaLeftX &&
+      player.x + player.width > this.boss.arenaLeftX - 64 &&
+      player.y + player.height > bossBarrierY
+    ) {
+      player.x = this.boss.arenaLeftX;
+      player.vx = 0;
+    }
+
     // Stomp detection: only when player is falling and crosses boss visible top between frames
     const crossedTop = prevBottom <= bossTop && currBottom >= bossTop;
 
@@ -244,7 +281,7 @@ export default class BossManager {
         this.boss.stateTimer = 0;
       }
     } else if (this.boss.state === "attack") {
-      if (this.boss.stateTimer > 1) {
+      if (this.boss.stateTimer > 2) {
         this.fireProjectile(player);
         this.boss.state = "flying";
         this.boss.stateTimer = 0;
