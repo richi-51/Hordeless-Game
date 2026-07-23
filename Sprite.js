@@ -19,13 +19,15 @@ export default class Sprite {
         }
     }
 
-    draw(ctx, x, y, flipX = false, scale = 1.0) {
+    draw(ctx, x, y, flipX = false, scale = 1.0, scaleY = null) {
         if (!this.image.complete) return;
 
         ctx.save();
-        
-        let renderWidth = this.frameWidth * scale;
-        let renderHeight = this.frameHeight * scale;
+
+        const scaleX = scale;
+        const finalScaleY = scaleY === null ? scale : scaleY;
+        let renderWidth = this.frameWidth * scaleX;
+        let renderHeight = this.frameHeight * finalScaleY;
 
         if (flipX) {
             let cx = Math.floor(x + renderWidth / 2);

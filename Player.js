@@ -1,4 +1,5 @@
 import Sprite from './Sprite.js';
+import { audioManager } from './AudioManager.js';
 
 export default class Player {
     constructor(gameWidth, gameHeight, game) {
@@ -23,9 +24,16 @@ export default class Player {
         this.health = this.baseMaxHealth;
         this.invulnerableTimer = 0;
         this.invulnerableDuration = 1.5;
+        this.isDying = false;
+        this.deathTimer = 0;
+        this.deathDuration = 1.2;
+        this.deathFinished = false;
+        this.attackHitRegistered = false;
 
         this.x = 50; // Start at left
         this.y = this.gameHeight - this.height - 40;
+        this.prevX = this.x;
+        this.prevY = this.y;
         this.vx = 0;
         this.vy = 0;
         
@@ -86,6 +94,7 @@ export default class Player {
         this.attackTimer = 0;
         this.attackDuration = 0;
         this.currentSprite = this.sprites.normal.idle;
+        this.deathSprite = new Sprite('/Assets/Jesus/HandsUp2.png', 89, 128, 1, 0.1);
         // Load shadow image
         if (!Player.shadowImage) {
             Player.shadowImage = new Image();
@@ -115,6 +124,9 @@ export default class Player {
             }
             this.y -= (this.height - oldHeight); // Adjust y position so we don't clip into ground
             this.isAttacking = false; // Reset attack state upon transformation to prevent missing sprite crashes
+            this.attackTimer = 0;
+            this.attackDuration = 0;
+            this.currentSprite = this.sprites[formName].idle;
         }
     }
 
@@ -127,9 +139,32 @@ export default class Player {
         }
     }
 
+    startDeathSequence() {
+        this.isDying = true;
+        this.deathTimer = 0;
+        this.deathFinished = false;
+        this.isAttacking = false;
+        this.attackTimer = 0;
+        this.attackDuration = 0;
+        this.vx = 0;
+        this.vy = -180;
+        this.grounded = false;
+        this.form = 'jesus';
+        this.currentSprite = this.deathSprite;
+        this.width = 28;
+        this.height = 28;
+        this.game.updateHUD(0);
+        import('./AudioManager.js').then(({ audioManager }) => {
+            audioManager.stop('heavenly');
+            audioManager.play('heavenly');
+        });
+    }
+
     takeDamage() {
-        if (this.isInvulnerable) return;
+        if (this.isInvulnerable || this.isDying) return;
         
+        audioManager.play('hurt');
+
         if (this.form !== 'normal') {
             this.revertForm();
             return;
@@ -142,7 +177,7 @@ export default class Player {
         this.game.updateHUD(this.health);
 
         if (this.health <= 0) {
-            this.game.endRun();
+            this.startDeathSequence();
         }
     }
 
@@ -159,32 +194,36 @@ export default class Player {
         this.maxJumps = upgrades.djump ? 2 : 1;
         this.canWallJump = upgrades.wjump;
         
-        this.width = 24;
-        this.height = 24;
+        this.isDying = false;
+        this.deathTimer = 0;
+        this.deathFinished = false;
+        this.transform('normal');
         this.x = 50;
         this.y = this.gameHeight - this.height - 40;
         this.vx = 0;
         this.vy = 0;
         this.jumpCount = 0;
+        this.grounded = false;
+        this.currentSprite = this.sprites.normal.idle;
     }
 
     draw(ctx, cameraX) {
         if (!this.currentSprite) return;
         
-        if (this.invulnerableTimer > 0) {
+        if (this.invulnerableTimer > 0 && !this.isDying) {
             if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
                 return;
             }
         }
         
         // Draw Shadow
-        if (Player.shadowImage && Player.shadowImage.complete) {
+        if (!this.isDying && Player.shadowImage && Player.shadowImage.complete) {
             ctx.drawImage(Player.shadowImage, this.x + this.width / 2 - 16 - cameraX, this.y + this.height - 4, 32, 8);
         }
 
         ctx.save();
         
-        let scale = this.form === 'normal' ? 1.0 : 0.5; // Bosses scaled down, main characters 1.0
+        let scale = this.isDying ? 0.45 : (this.form === 'normal' ? 1.0 : 0.5);
         let renderWidth = this.currentSprite.frameWidth * scale;
         let renderHeight = this.currentSprite.frameHeight * scale;
 
@@ -197,6 +236,24 @@ export default class Player {
     }
 
     update(input, deltaTime, effects) {
+        // store previous position for collision checks (used by boss stomp logic)
+        this.prevX = this.x;
+        this.prevY = this.y;
+        if (this.isDying) {
+            this.deathTimer += deltaTime;
+            this.vx = 0;
+            this.x += Math.sin(this.deathTimer * 6) * 20 * deltaTime;
+            this.y += this.vy * deltaTime;
+            this.vy -= 40 * deltaTime;
+            this.currentSprite.update(deltaTime);
+
+            if (this.deathTimer >= this.deathDuration && !this.deathFinished) {
+                this.deathFinished = true;
+                this.game.endRun();
+            }
+            return;
+        }
+
         let wasGrounded = this.grounded;
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= deltaTime;
@@ -305,6 +362,7 @@ export default class Player {
             } else if (this.coyoteCounter > 0 || this.jumpCount < this.maxJumps) {
                 this.vy = this.jumpStrength;
                 this.jumpCount++;
+                audioManager.play('jump');
                 
                 if (this.coyoteCounter <= 0 && this.jumpCount > 1) {
                     this.sprites[this.form].djump.currentFrame = 0; 
@@ -364,6 +422,7 @@ export default class Player {
             this.currentSprite = activeSprites.attack;
             if (this.attackTimer <= 0) {
                 this.isAttacking = false;
+                this.attackHitRegistered = false;
             }
         } else if (this.invulnerableTimer > 0 && this.invulnerableTimer > this.invulnerableDuration - 0.3 && this.form === 'normal') {
              this.currentSprite = activeSprites.hit;
