@@ -17,13 +17,26 @@ export default class PlatformManager {
     this.platforms = [];
   }
 
-  reset(platformsData) {
-    this.platforms = Array.isArray(platformsData)
+  reset(platformsData, terrainData = [], terrainColor = "#8B4513", grassColor = "#228B22") {
+    const mappedPlatforms = Array.isArray(platformsData)
       ? platformsData.map((plat) => ({
           ...plat,
           oneWay: true,
+          isPlatform: true,
         }))
       : [];
+
+    const mappedTerrain = Array.isArray(terrainData)
+      ? terrainData.map((terrain) => ({
+          ...terrain,
+          oneWay: false,
+          isTerrain: true,
+          color: terrain.color || terrainColor,
+          grassColor: terrain.grassColor || grassColor,
+        }))
+      : [];
+
+    this.platforms = [...mappedPlatforms, ...mappedTerrain];
   }
 
   update(deltaTime) {
@@ -42,6 +55,29 @@ export default class PlatformManager {
           plat.x > cameraX + this.gameWidth + 100)
       )
         continue;
+
+      if (plat.isTerrain) {
+        const topBandHeight = Math.min(8, plat.height || 8);
+        const baseHeight = Math.max(0, (plat.height || 8) - topBandHeight);
+        const baseColor = plat.baseColor || "#8B4513"; // brown base to show elevation
+        const topColor = plat.color || "#800000"; // terrain main color (purple/maroon)
+        const grassHeight = Math.min(4, topBandHeight);
+
+        // Draw base/bulk of terrain in brown
+        if (baseHeight > 0) {
+          ctx.fillStyle = baseColor;
+          ctx.fillRect(plat.x - cameraX, plat.y + topBandHeight, plat.width, baseHeight);
+        }
+
+        // Draw top band in the terrain color
+        ctx.fillStyle = topColor;
+        ctx.fillRect(plat.x - cameraX, plat.y, plat.width, topBandHeight);
+
+        // Draw a thin grass/highlight strip on the very top
+        ctx.fillStyle = plat.grassColor || "#228B22";
+        ctx.fillRect(plat.x - cameraX, plat.y, plat.width, grassHeight);
+        continue;
+      }
 
       const tileCount = Math.ceil(plat.width / 32);
 

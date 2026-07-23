@@ -6,14 +6,21 @@ export const Levels = [
     grassColor: "#228B22",
     length: 3000,
     platforms: [
-      { x: 300, y: 240, width: 96, height: 8 },
+      { x: 400, y: 240, width: 96, height: 8 },
       { x: 600, y: 240, width: 96, height: 8 },
-      { x: 750, y: 160, width: 96, height: 8 },
+      { x: 750, y: 190, width: 96, height: 8 },
       { x: 1000, y: 240, width: 128, height: 8 },
+      { x: 1200, y: 180, width: 80, height: 8 },
       { x: 1400, y: 210, width: 96, height: 8 },
       { x: 1800, y: 240, width: 96, height: 8 },
       { x: 2000, y: 160, width: 96, height: 8 },
+      { x: 2150, y: 180, width: 80, height: 8 },
       { x: 2300, y: 240, width: 96, height: 8 },
+    ],
+    terrain: [
+      { x: 2140, y: 300, width: 40, height: 40 },
+      { x: 2150, y: 280, width: 40, height: 60 },
+      { x: 2170, y: 300, width: 40, height: 60 },
     ],
     boxes: [
       { x: 400, y: 150 },
@@ -28,6 +35,7 @@ export const Levels = [
     ],
     spikes: [
       { x: 1300, count: 4 }, // gap spikes
+      { x: 2055, count: 5 },
     ],
     trampolines: [
       { x: 1200, y: 292 }, // ground level is 360-40 = 320, minus 28 = 292
@@ -42,13 +50,17 @@ export const Levels = [
     platforms: [
       { x: 400, y: 260, width: 64, height: 8 }, // collision height only 8 (visual rendered as thick)
       { x: 600, y: 160, width: 64, height: 8 },
+      { x: 750, y: 180, width: 64, height: 8 },
       { x: 900, y: 240, width: 128, height: 8 },
+      { x: 1260, y: 130, width: 64, height: 8 },
       { x: 1400, y: 100, width: 64, height: 8 },
+      { x: 1500, y: 130, width: 64, height: 8 },
       { x: 1600, y: 200, width: 64, height: 8 },
       { x: 1900, y: 240, width: 128, height: 8 },
       { x: 2300, y: 140, width: 64, height: 8 },
+      { x: 2400, y: 180, width: 64, height: 8 },
       { x: 2500, y: 240, width: 128, height: 8 },
-      { x: 3100, y: 180, width: 96, height: 8 },
+      { x: 2980, y: 200, width: 96, height: 8 },
       { x: 4180, y: 120, width: 96, height: 8 },
       { x: 4330, y: 120, width: 96, height: 8 },
       { x: 4480, y: 120, width: 96, height: 8 },
@@ -58,6 +70,11 @@ export const Levels = [
       { x: 4180, y: 280, width: 96, height: 8 },
       { x: 4330, y: 280, width: 96, height: 8 },
       { x: 4480, y: 280, width: 96, height: 8 },
+    ],
+    terrain: [
+      { x: 760, y: 300, width: 220, height: 40 },
+      { x: 1800, y: 300, width: 220, height: 40 },
+      { x: 2400, y: 300, width: 250, height: 40 },
     ],
     boxes: [
       { x: 610, y: 70 },
@@ -72,9 +89,9 @@ export const Levels = [
       { x: 3100, type: 2 },
     ],
     spikes: [
-      { x: 500, count: 6 },
-      { x: 1050, count: 10 },
-      { x: 2050, count: 12 },
+      { x: 490, count: 6 },
+      { x: 1050, count: 7 },
+      { x: 2050, count: 7 },
       { x: 3000, count: 8 },
     ],
     trampolines: [
@@ -95,20 +112,31 @@ export const Levels = [
     grassColor: "#8B008B", // dark magenta
     length: 5000,
     platforms: [
+      { x: 200, y: 260, width: 32, height: 8 },
       { x: 300, y: 200, width: 32, height: 8 }, // tall walls for wall jump
       { x: 600, y: 150, width: 32, height: 8 },
-      { x: 1000, y: 250, width: 96, height: 8 },
+      { x: 750, y: 150, width: 32, height: 8 },
+      { x: 1050, y: 210, width: 96, height: 8 },
+      { x: 1250, y: 210, width: 32, height: 8 },
       { x: 1400, y: 150, width: 96, height: 8 },
-      { x: 1800, y: 200, width: 32, height: 8 },
-      { x: 2200, y: 100, width: 32, height: 8 },
-      { x: 2600, y: 240, width: 64, height: 8 },
+      { x: 1900, y: 230, width: 32, height: 8 },
+      { x: 2150, y: 230, width: 32, height: 8 },
+      { x: 2250, y: 200, width: 32, height: 8 },
+      { x: 2350, y: 180, width: 64, height: 8 },
+      { x: 3100, y: 170, width: 32, height: 8 },
       { x: 3200, y: 150, width: 64, height: 8 },
-      { x: 3800, y: 200, width: 32, height: 8 },
-      { x: 4200, y: 100, width: 64, height: 8 },
+      { x: 3750, y: 230, width: 32, height: 8 },
+      { x: 4050, y: 230, width: 64, height: 8 },
+    ],
+    terrain: [
+      { x: 980, y: 280, width: 180, height: 40 },
+      { x: 1700, y: 300, width: 180, height: 40 },
+      { x: 1740, y: 280, width: 90, height: 40 },
+      { x: 3500, y: 300, width: 220, height: 40 },
     ],
     boxes: [
-      { x: 1020, y: 160 },
-      { x: 2600, y: 160 },
+      { x: 1020, y: 130 },
+      { x: 2350, y: 120 },
       { x: 3200, y: 80 },
     ],
     enemies: [
@@ -120,15 +148,17 @@ export const Levels = [
       { x: 4000, type: 1 },
     ],
     spikes: [
-      { x: 350, count: 14 },
+      { x: 350, count: 8 },
       { x: 650, count: 20 },
-      { x: 1850, count: 20 },
-      { x: 3850, count: 20 },
+      { x: 1880, count: 16 },
+      { x: 3800, count: 20 },
     ],
     trampolines: [
+      { x: 600, y: 292 },
       { x: 900, y: 292 },
+      { x: 2000, y: 288 },
       { x: 3000, y: 292 },
-      { x: 4500, y: 292 },
+      { x: 3900, y: 292 },
     ],
   },
 ];
