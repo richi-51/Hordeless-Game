@@ -39,7 +39,7 @@ export default class ItemManager {
                 player.y + player.height > item.y) {
                 
                 if (item.type === 'coin') {
-                    this.game.addCoin();
+                    this.game.addSkillPoint();
                     if (player.health < player.maxHealth) {
                         player.health++;
                         this.game.updateHUD(player.health);

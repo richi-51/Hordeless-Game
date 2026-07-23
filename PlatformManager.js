@@ -18,7 +18,12 @@ export default class PlatformManager {
   }
 
   reset(platformsData) {
-    this.platforms = platformsData || [];
+    this.platforms = Array.isArray(platformsData)
+      ? platformsData.map((plat) => ({
+          ...plat,
+          oneWay: true,
+        }))
+      : [];
   }
 
   update(deltaTime) {

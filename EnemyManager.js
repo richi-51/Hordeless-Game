@@ -25,6 +25,10 @@ export default class EnemyManager {
             { x: 2200, type: 1 },
             { x: 2500, type: 0 },
         ];
+
+        this.sightRange = gameWidth * (2 / 3);
+        this.chaseYTolerance = 40;
+        this.returnRange = 260;
     }
 
     update(deltaTime, player, platforms, effects) {
@@ -39,6 +43,49 @@ export default class EnemyManager {
             
             // Only update enemies that are somewhat near the camera
             if (enemy.x > player.x + 800 || enemy.x < player.x - 800) continue;
+
+            if (!enemy.state) {
+                enemy.state = 'patrol';
+            }
+
+            const playerCenterX = player.x + player.width / 2;
+            const enemyCenterX = enemy.x + enemy.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+            const enemyCenterY = enemy.y + enemy.height / 2;
+            const sameYLevel = Math.abs(playerCenterY - enemyCenterY) <= this.chaseYTolerance;
+            const inSight = Math.abs(playerCenterX - enemyCenterX) <= this.sightRange;
+            const shouldChase = !enemy.chaseLocked && sameYLevel && inSight;
+
+            if (shouldChase) {
+                enemy.state = 'chase';
+                enemy.chaseLocked = true;
+                const chaseSpeed = enemy.type.speed * 1.15;
+                enemy.vx = player.x < enemy.x ? -chaseSpeed : chaseSpeed;
+            }
+
+            if (enemy.state === 'chase') {
+                const chaseSpeed = enemy.type.speed * 1.15;
+                enemy.vx = player.x < enemy.x ? -chaseSpeed : chaseSpeed;
+
+                if (Math.abs(playerCenterX - enemyCenterX) > this.sightRange) {
+                    enemy.state = 'return';
+                }
+            }
+
+            if (enemy.state === 'return') {
+                const offsetFromSpawn = enemy.x - enemy.spawnX;
+                if (Math.abs(offsetFromSpawn) <= 8) {
+                    enemy.state = 'patrol';
+                    enemy.chaseLocked = false;
+                    enemy.vx = -enemy.type.speed;
+                } else {
+                    enemy.vx = offsetFromSpawn > 0 ? -enemy.type.speed : enemy.type.speed;
+                }
+            }
+
+            if (enemy.state === 'patrol') {
+                enemy.vx = enemy.vx || -enemy.type.speed;
+            }
             
             enemy.x += enemy.vx * deltaTime;
             enemy.vy += 1200 * deltaTime; 
@@ -72,8 +119,10 @@ export default class EnemyManager {
             }
             
             // Reverse direction if hitting "walls" (just using arbitrary patrol zones for now)
-            if (enemy.x < enemy.spawnX - 200) enemy.vx = Math.abs(enemy.vx);
-            if (enemy.x > enemy.spawnX + 200) enemy.vx = -Math.abs(enemy.vx);
+            if (enemy.state === 'patrol') {
+                if (enemy.x < enemy.spawnX - 200) enemy.vx = Math.abs(enemy.type.speed);
+                if (enemy.x > enemy.spawnX + 200) enemy.vx = -Math.abs(enemy.type.speed);
+            }
 
             // Collision with player
             let attackHitbox = null;
@@ -149,7 +198,8 @@ export default class EnemyManager {
                 vy: 0,
                 type: typeDef,
                 grounded: true,
-                dead: false
+                dead: false,
+                state: 'patrol'
             });
             
             // Spawn an effect when enemies reset (just for polish)
