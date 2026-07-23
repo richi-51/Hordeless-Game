@@ -20,6 +20,7 @@ export default class Player {
         this.friction = 300;     // Decreased to show deceleration (sliding) clearly
         this.gravity = 1200;
         this.jumpStrength = this.baseJumpStrength;
+        this.trampolineBoostTimer = 0;
         
         this.health = this.baseMaxHealth;
         this.invulnerableTimer = 0;
@@ -309,6 +310,8 @@ export default class Player {
 
         // Horizontal Collision
         for (let solid of solids) {
+            if (solid.oneWay) continue;
+
             // If bounding boxes overlap (adding a small vertical threshold to prevent floor snags)
             if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
                 this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y + 4) {
@@ -335,7 +338,14 @@ export default class Player {
         }
 
         // --- Vertical Movement & Physics ---
-        this.vy += this.gravity * deltaTime;
+        let effectiveGravity = this.gravity;
+        if (this.trampolineBoostTimer > 0) {
+            effectiveGravity *= 0.65;
+            this.trampolineBoostTimer -= deltaTime;
+            if (this.trampolineBoostTimer < 0) this.trampolineBoostTimer = 0;
+        }
+
+        this.vy += effectiveGravity * deltaTime;
 
         if (this.wallSliding) {
             if (this.vy > this.wallSlideSpeed) {
@@ -396,6 +406,15 @@ export default class Player {
         for (let solid of solids) {
             if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
                 this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y) {
+
+                if (solid.oneWay) {
+                    const prevBottom = this.prevY + this.height;
+                    const solidTop = solid.y;
+
+                    if (this.vy <= 0 || prevBottom > solidTop + 4) {
+                        continue;
+                    }
+                }
                 
                 // Moving down (falling onto platform)
                 if (this.vy > 0) {

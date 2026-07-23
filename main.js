@@ -255,12 +255,8 @@ function gameLoop(timestamp) {
 
       if (cameraX < 0) cameraX = 0;
       if (bossManager.boss && bossManager.boss.alive && bossManager.triggered) {
-        const bossLock =
-          bossManager.boss.x -
-          GAME_WIDTH / 2 +
-          bossManager.boss.width / 2 +
-          120;
-        if (cameraX > bossLock) cameraX = bossLock;
+        const bossLock = bossManager.boss.cameraLockX ?? cameraX;
+        cameraX = bossLock;
       } else if (cameraX > LEVEL_WIDTH - GAME_WIDTH) {
         cameraX = LEVEL_WIDTH - GAME_WIDTH;
       }
