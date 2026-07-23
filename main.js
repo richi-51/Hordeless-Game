@@ -78,7 +78,12 @@ game.onStartRun = (upgrades) => {
   startX = 50;
   endX = LEVEL_WIDTH - 150;
 
-  platforms.reset(currentLevel.platforms);
+  platforms.reset(
+    currentLevel.platforms,
+    currentLevel.terrain,
+    currentLevel.terrainColor,
+    currentLevel.grassColor,
+  );
   enemies.reset(currentLevel.enemies, effects);
   bossManager.reset(currentLevel, player);
   items.reset(LEVEL_WIDTH);
@@ -110,11 +115,22 @@ let lastTime = 0;
 function drawTerrain(ctx, cameraX) {
   if (!currentLevel) return;
 
-  ctx.fillStyle = currentLevel.terrainColor;
-  ctx.fillRect(-cameraX, GAME_HEIGHT - 40, LEVEL_WIDTH, 40);
+  // Draw a dirt base for the whole ground so terrain and ground visually blend
+  const baseColor = currentLevel.baseColor || "#8B4513"; // brown dirt base
+  const topColor = currentLevel.terrainColor || "#800000"; // terrain top band
+  const grassColor = currentLevel.grassColor || "#228B22";
 
-  ctx.fillStyle = currentLevel.grassColor;
+  // Base bulk of the ground (dirt)
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(-cameraX, GAME_HEIGHT - 40 + 8, LEVEL_WIDTH, 40 - 8);
+
+  // Top band of terrain (colored)
+  ctx.fillStyle = topColor;
   ctx.fillRect(-cameraX, GAME_HEIGHT - 40, LEVEL_WIDTH, 8);
+
+  // Thin grass/highlight on very top
+  ctx.fillStyle = grassColor;
+  ctx.fillRect(-cameraX, GAME_HEIGHT - 40, LEVEL_WIDTH, 4);
 
   // Draw Spikes in a specific area
   if (spikeImage.complete && currentLevel.spikes) {
@@ -284,12 +300,14 @@ function gameLoop(timestamp) {
       player.y + player.height >= GAME_HEIGHT - 40 - 64
     ) {
       if (!bossManager.boss || !bossManager.boss.alive) {
-        if (game.currentLevelIndex === 0) {
-          // Completed Level 1, move to Level 2 preparation
-          game.score += 500; // Bonus for completing level 1
-          game.prepareLevel(1);
+        if (game.currentLevelIndex < 2) {
+          // Completed a level, unlock the next one and move to its preparation screen
+          game.score += 500;
+          game.unlockLevel(game.currentLevelIndex + 1);
+          game.prepareLevel(game.currentLevelIndex + 1);
         } else {
-          game.score += 500; // Bonus for completing level 2
+          game.score += 500;
+          game.unlockLevel(2);
           game.victory = true;
           game.endRun();
         }

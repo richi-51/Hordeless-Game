@@ -21,6 +21,9 @@ export default class Player {
         this.gravity = 1200;
         this.jumpStrength = this.baseJumpStrength;
         this.trampolineBoostTimer = 0;
+        this.maxTrampolineBoostTime = 0.16;
+        this.maxTrampolineHeight = 140;
+        this.trampolineBoostOriginY = null;
         
         this.health = this.baseMaxHealth;
         this.invulnerableTimer = 0;
@@ -340,9 +343,17 @@ export default class Player {
         // --- Vertical Movement & Physics ---
         let effectiveGravity = this.gravity;
         if (this.trampolineBoostTimer > 0) {
-            effectiveGravity *= 0.65;
             this.trampolineBoostTimer -= deltaTime;
             if (this.trampolineBoostTimer < 0) this.trampolineBoostTimer = 0;
+        }
+
+        if (
+            this.trampolineBoostOriginY !== null &&
+            this.y <= this.trampolineBoostOriginY - this.maxTrampolineHeight
+        ) {
+            this.vy = 0;
+            this.trampolineBoostOriginY = null;
+            this.trampolineBoostTimer = 0;
         }
 
         this.vy += effectiveGravity * deltaTime;
