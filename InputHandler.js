@@ -4,6 +4,7 @@ export default class InputHandler {
             left: false,
             right: false,
             up: false,
+            down: false,
             jump: false, // To track continuous hold
             attack: false
         };
@@ -22,6 +23,7 @@ export default class InputHandler {
                 case 'KeyD':
                     this.keys.right = true;
                     break;
+                case 'Space':
                 case 'ArrowUp':
                 case 'KeyW':
                     if (!this.keys.jump) {
@@ -30,7 +32,14 @@ export default class InputHandler {
                     this.keys.up = true;
                     this.keys.jump = true;
                     break;
-                case 'Space':
+                case 'ArrowDown':
+                case 'KeyS':
+                    this.keys.down = true;
+                    break;
+                case 'KeyJ':
+                case 'KeyZ':
+                case 'KeyF':
+                case 'ShiftLeft':
                     this.keys.attack = true;
                     break;
             }
@@ -46,12 +55,20 @@ export default class InputHandler {
                 case 'KeyD':
                     this.keys.right = false;
                     break;
+                case 'Space':
                 case 'ArrowUp':
                 case 'KeyW':
                     this.keys.up = false;
                     this.keys.jump = false;
                     break;
-                case 'Space':
+                case 'ArrowDown':
+                case 'KeyS':
+                    this.keys.down = false;
+                    break;
+                case 'KeyJ':
+                case 'KeyZ':
+                case 'KeyF':
+                case 'ShiftLeft':
                     this.keys.attack = false;
                     break;
             }

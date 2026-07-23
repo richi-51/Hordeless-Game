@@ -48,11 +48,12 @@ export default class Game {
       localStorage.getItem("hordeless_coins"),
       10,
     );
-    this.totalSkillPoints = Number.isNaN(storedSkillPoints)
+    const parsedSP = Number.isNaN(storedSkillPoints)
       ? Number.isNaN(legacySkillPoints)
         ? 20
         : legacySkillPoints
       : storedSkillPoints;
+    this.totalSkillPoints = Number.isNaN(parsedSP) ? 20 : parsedSP;
 
     // Loadout State (Resets every run)
     this.currentSP = this.totalSkillPoints;
@@ -92,6 +93,19 @@ export default class Game {
   }
 
   resetLoadout() {
+    this.loadout = {
+      speed: 0,
+      health: 0,
+      djump: false,
+      wjump: false,
+      rex: false,
+      tri: false,
+      pengu: false,
+    };
+    if (Number.isNaN(this.totalSkillPoints) || typeof this.totalSkillPoints !== "number") {
+      this.totalSkillPoints = 20;
+    }
+    this.currentSP = this.totalSkillPoints;
     this.updateUI();
   }
 
@@ -352,9 +366,7 @@ export default class Game {
       .addEventListener("click", () => {
         if (this.loadout.speed < 3 && this.currentSP >= costs.speed) {
           this.loadout.speed++;
-          this.totalCoins -= costs.speed;
-          this.currentSP = this.totalCoins;
-          localStorage.setItem("hordeless_coins", this.totalCoins);
+          this.currentSP -= costs.speed;
           this.updateUI();
         }
       });
@@ -431,11 +443,20 @@ export default class Game {
   }
 
   saveData() {
+    if (Number.isNaN(this.totalSkillPoints) || typeof this.totalSkillPoints !== "number") {
+      this.totalSkillPoints = 20;
+    }
     localStorage.setItem("hordeless_skill_points", this.totalSkillPoints);
   }
 
   updateUI() {
     if (!this.ui.menuSP) return;
+    if (Number.isNaN(this.totalSkillPoints) || typeof this.totalSkillPoints !== "number") {
+      this.totalSkillPoints = 20;
+    }
+    if (Number.isNaN(this.currentSP) || typeof this.currentSP !== "number") {
+      this.currentSP = this.totalSkillPoints;
+    }
     this.ui.menuSP.innerText = this.currentSP;
     this.ui.lvlSpeed.innerText = `Lv ${this.loadout.speed}`;
     this.ui.lvlHealth.innerText = `Lv ${this.loadout.health}`;

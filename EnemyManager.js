@@ -7,6 +7,7 @@ export default class EnemyManager {
         this.gameHeight = gameHeight;
         this.game = game; 
         this.enemies = [];
+        this.gaps = [];
         
         const basePath = '/Assets/Free/Main Characters';
         this.enemyTypes = [
@@ -131,13 +132,47 @@ export default class EnemyManager {
                 enemy.vx = enemy.vx || -enemy.type.speed;
             }
             
+            // Horizontal movement & collision with terrain blocks
             enemy.x += enemy.vx * deltaTime;
+
+            if (platforms) {
+                for (let plat of platforms) {
+                    if (!plat.isTerrain) continue;
+
+                    // Overlap check
+                    const horizOverlap = enemy.x < plat.x + plat.width && enemy.x + enemy.width > plat.x;
+                    // Allow walking on top of terrain if enemy.y + enemy.height is at or near plat.y
+                    const vertOverlap = enemy.y + enemy.height > plat.y + 4 && enemy.y < plat.y + (plat.height || 40);
+
+                    if (horizOverlap && vertOverlap) {
+                        if (enemy.vx > 0) {
+                            enemy.x = plat.x - enemy.width;
+                            enemy.vx = -Math.abs(enemy.type.speed);
+                        } else if (enemy.vx < 0) {
+                            enemy.x = plat.x + plat.width;
+                            enemy.vx = Math.abs(enemy.type.speed);
+                        }
+                        if (enemy.state === 'chase') {
+                            enemy.state = 'return';
+                            enemy.chaseLocked = false;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Vertical movement & collision
             enemy.vy += 1200 * deltaTime; 
             enemy.y += enemy.vy * deltaTime;
 
             // Determine grounding for this frame, then write it back to enemy.grounded
             let grounded = false;
-            if (enemy.y + enemy.height >= groundLevel) {
+
+            // Check if enemy is over a gap - don't ground them, let them fall
+            const enemyCenterXPos = enemy.x + enemy.width / 2;
+            const overEnemyGap = this.gaps.some(gap => enemyCenterXPos > gap.x && enemyCenterXPos < gap.x + gap.width);
+
+            if (!overEnemyGap && enemy.y + enemy.height >= groundLevel) {
                 enemy.y = groundLevel - enemy.height;
                 enemy.vy = 0;
                 grounded = true;
@@ -148,7 +183,7 @@ export default class EnemyManager {
                     const prevBottom = (enemy.y - enemy.vy * deltaTime) + enemy.height;
                     const currentBottom = enemy.y + enemy.height;
                     // Allow a small epsilon to avoid tunnelling issues
-                    const verticalOverlap = prevBottom <= plat.y + 2 && currentBottom >= plat.y - 2;
+                    const verticalOverlap = prevBottom <= plat.y + 6 && currentBottom >= plat.y - 2;
                     const horizontalOverlap = enemy.x + enemy.width > plat.x && enemy.x < plat.x + plat.width;
 
                     if (verticalOverlap && horizontalOverlap) {
@@ -163,71 +198,31 @@ export default class EnemyManager {
             // Keep enemy.grounded in sync so later logic uses up-to-date state
             enemy.grounded = grounded;
 
+            // Remove enemy if it falls into a gap (below screen)
+            if (enemy.y > this.gameHeight + 100) {
+                this.enemies.splice(i, 1);
+                continue;
+            }
+
             if (enemy.type.type === 'jumper' && grounded) {
                 if (Math.random() < 0.02) {
                     enemy.vy = -450 - Math.random() * 200; 
                 }
             }
+
+            // Gap edge detection - reverse direction before walking into a gap
+            if (enemy.grounded && enemy.state !== 'chase') {
+                const lookAhead = enemy.vx > 0 ? enemy.x + enemy.width + 8 : enemy.x - 8;
+                const nearGapEdge = this.gaps.some(gap => lookAhead > gap.x && lookAhead < gap.x + gap.width);
+                if (nearGapEdge) {
+                    enemy.vx *= -1;
+                }
+            }
             
-            // Reverse direction if hitting patrol boundary or terrain edge
+            // Reverse direction if hitting patrol boundary
             if (enemy.state === 'patrol') {
                 if (enemy.x < enemy.spawnX - 200) enemy.vx = Math.abs(enemy.type.speed);
                 if (enemy.x > enemy.spawnX + 200) enemy.vx = -Math.abs(enemy.type.speed);
-            }
-
-            // Detect terrain directly in front of the enemy within a small vision box.
-            // Treat only elevated terrain (not the main ground) as obstacles.
-            if (enemy.state !== 'chase' && enemy.grounded) {
-                const lookAheadDist = 40; // how far ahead to check for obstacles
-                const eyeY = enemy.y + enemy.height / 2;
-                const lookLeft = enemy.vx < 0;
-                const boxLeft = lookLeft ? enemy.x - lookAheadDist : enemy.x + enemy.width;
-                const boxRight = lookLeft ? enemy.x : enemy.x + enemy.width + lookAheadDist;
-                const groundThreshold = groundLevel - 8; // terrain at or below this is treated as ground
-
-                const terrainAhead = platforms?.some((plat) => {
-                    if (!plat.isTerrain) return false;
-                    // ignore terrain that is essentially ground
-                    if (plat.y >= groundThreshold) return false;
-                    // horizontal overlap between look box and platform
-                    const horizOverlap = boxRight > plat.x && boxLeft < plat.x + plat.width;
-                    // vertical overlap with enemy eye/height
-                    const vertOverlap = eyeY > plat.y - 2 && eyeY < plat.y + plat.height + 2;
-                    return horizOverlap && vertOverlap;
-                });
-
-                if (terrainAhead) {
-                    // Nudge back and flip direction to avoid clipping into the elevated terrain
-                    enemy.vx *= -1;
-                    if (enemy.vx > 0) enemy.x -= 2; else enemy.x += 2;
-                }
-            }
-
-            if (enemy.state !== 'chase' && enemy.grounded) {
-                // Compute the actual future X for this frame (enemy.x already updated above)
-                const prevX = enemy.x - enemy.vx * deltaTime;
-                const nextX = enemy.x;
-                let collisionPlat = null;
-                const wouldClipIntoTerrain = platforms?.some((plat) => {
-                    if (!plat.isTerrain) return false;
-                    const futureRight = nextX + enemy.width;
-                    const futureLeft = nextX;
-                    // Use a slightly tightened vertical range to detect edge clipping
-                    const verticalTouch = enemy.y + enemy.height >= plat.y - 2 && enemy.y + enemy.height <= plat.y + 6;
-                    const overlap = verticalTouch && futureRight > plat.x && futureLeft < plat.x + plat.width;
-                    if (overlap) collisionPlat = plat;
-                    return overlap;
-                });
-
-                if (wouldClipIntoTerrain) {
-                    // Nudge enemy back outside the platform to avoid clipping
-                    if (enemy.vx > 0) {
-                        enemy.x = collisionPlat.x - enemy.width - 1;
-                    } else {
-                        enemy.x = collisionPlat.x + collisionPlat.width + 1;
-                    }
-                    enemy.vx *= -1;
-                }
             }
 
             // Collision with player
@@ -288,16 +283,43 @@ export default class EnemyManager {
         }
     }
 
-    reset(enemyData, effects) {
+    reset(enemyData, effects, levelGaps = [], terrainData = []) {
         this.enemies = [];
+        this.gaps = Array.isArray(levelGaps) ? levelGaps : [];
         if (!enemyData) return;
         
+        const groundLevel = this.gameHeight - 40;
+
         for (let e of enemyData) {
             let typeDef = this.enemyTypes[e.type];
+            let spawnX = e.x;
+
+            // Don't spawn enemy inside a gap - nudge them out
+            for (let gap of this.gaps) {
+                if (spawnX + 16 > gap.x && spawnX < gap.x + gap.width) {
+                    // Move to the nearest edge of the gap
+                    const distToLeft = Math.abs(spawnX - gap.x);
+                    const distToRight = Math.abs(spawnX - (gap.x + gap.width));
+                    spawnX = distToLeft < distToRight ? gap.x - 40 : gap.x + gap.width + 8;
+                }
+            }
+
+            // Adjust spawnY if spawning on or inside terrain
+            let spawnY = groundLevel - 32;
+            if (Array.isArray(terrainData)) {
+                for (let t of terrainData) {
+                    if (spawnX + 28 > t.x && spawnX + 4 < t.x + t.width) {
+                        if (t.y < spawnY + 32) {
+                            spawnY = t.y - 32;
+                        }
+                    }
+                }
+            }
+
             this.enemies.push({
-                x: e.x,
-                y: this.gameHeight - 40 - 32, // all on ground for now
-                spawnX: e.x,
+                x: spawnX,
+                y: spawnY,
+                spawnX: spawnX,
                 width: 32,
                 height: 32,
                 vx: -typeDef.speed,
