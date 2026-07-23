@@ -33,6 +33,7 @@ export default class Player {
         this.deathDuration = 1.2;
         this.deathFinished = false;
         this.attackHitRegistered = false;
+        this.dropDownTimer = 0;
 
         this.x = 50; // Start at left
         this.y = this.gameHeight - this.height - 40;
@@ -259,6 +260,10 @@ export default class Player {
         }
 
         let wasGrounded = this.grounded;
+        if (this.dropDownTimer > 0) {
+            this.dropDownTimer -= deltaTime;
+        }
+
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= deltaTime;
             if (this.invulnerableTimer <= 0) {
@@ -374,7 +379,20 @@ export default class Player {
 
         // Jump (Consumes Input Buffer)
         if (input.jumpBufferCounter > 0) {
-            if (this.wallSliding) {
+            const onOneWayPlatform = solids.some(solid => 
+                solid.oneWay &&
+                this.x < solid.x + solid.width &&
+                this.x + this.width > solid.x &&
+                Math.abs((this.y + this.height) - solid.y) <= 4
+            );
+
+            if (input.keys.down && onOneWayPlatform) {
+                input.jumpBufferCounter = 0;
+                this.dropDownTimer = 0.25;
+                this.y += 4;
+                this.vy = 100;
+                this.grounded = false;
+            } else if (this.wallSliding) {
                 // Wall Jump
                 this.vy = this.jumpStrength;
                 this.vx = this.facingRight ? -this.maxSpeed : this.maxSpeed;
@@ -406,11 +424,36 @@ export default class Player {
         const groundLevel = this.gameHeight - 40; 
         this.grounded = false; 
 
-        if (this.y + this.height >= groundLevel) {
+        // Check if player is currently standing over a pit gap
+        const currentLevelData = this.game?.currentLevelIndex !== undefined && window.Levels ? window.Levels[this.game.currentLevelIndex] : null;
+        let overGap = false;
+        if (currentLevelData && currentLevelData.gaps) {
+            const playerCenterX = this.x + this.width / 2;
+            overGap = currentLevelData.gaps.some(gap => playerCenterX > gap.x && playerCenterX < gap.x + gap.width);
+        }
+
+        if (!overGap && this.y + this.height >= groundLevel) {
             this.y = groundLevel - this.height;
             this.vy = 0;
             this.grounded = true;
+        }
 
+        // Pit Fall Check (Falling into gaps)
+        if (this.y > this.gameHeight + 30) {
+            this.takeDamage();
+            if (!this.isDying) {
+                // Safe respawn position before the pit
+                this.x = Math.max(50, this.x - 250);
+                this.y = groundLevel - this.height - 40;
+                this.vy = -100;
+            } else {
+                // Player died from pit fall - reposition to visible area for death animation
+                // so the camera doesn't show a blank screen
+                this.x = Math.max(50, this.x - 100);
+                this.y = groundLevel - this.height - 60;
+                this.vy = -180;
+                return; // Exit update immediately — death anim handled next frame by isDying check at top
+            }
         }
 
         // Vertical Collision (Platforms and Boxes)
@@ -422,7 +465,7 @@ export default class Player {
                     const prevBottom = this.prevY + this.height;
                     const solidTop = solid.y;
 
-                    if (this.vy <= 0 || prevBottom > solidTop + 4) {
+                    if (this.dropDownTimer > 0 || this.vy <= 0 || prevBottom > solidTop + 4) {
                         continue;
                     }
                 }
