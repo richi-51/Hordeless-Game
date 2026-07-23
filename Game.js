@@ -10,15 +10,28 @@ export default class Game {
       MENU: 0,
       UPGRADES: 1,
       PLAYING: 2,
-      GAMEOVER: 3,
+      DIALOG: 3,
+      GAMEOVER: 4,
     };
     this.currentState = this.states.MENU;
+    this.dialogLines = [];
+    this.dialogLineIndex = 0;
+    this.dialogSpeaker = "Terranox";
+    this.dialogCallback = null;
 
     // UI Elements
     this.ui = {
       menu: document.getElementById("main-menu"),
       upgrades: document.getElementById("upgrade-menu"),
       hud: document.getElementById("hud"),
+      dialog: document.getElementById("dialog-screen"),
+      dialogSpeaker: document.getElementById("dialog-speaker"),
+      dialogText: document.getElementById("dialog-text"),
+      dialogPrompt: document.getElementById("dialog-prompt"),
+      dialogPlayerBox: document.querySelector(".dialog-player"),
+      dialogOtherBox: document.querySelector(".dialog-other"),
+      dialogOtherName: document.querySelector(".dialog-other-name"),
+      dialogOtherSprite: document.querySelector(".dialog-sprite-other"),
       gameOver: document.getElementById("game-over"),
 
       // Stats
@@ -333,6 +346,24 @@ export default class Game {
       this.setState(this.states.MENU);
     });
 
+    if (this.ui.dialog) {
+      this.ui.dialog.addEventListener("click", () => {
+        if (this.currentState === this.states.DIALOG) {
+          this.advanceDialog();
+        }
+      });
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (
+        (event.key === " " || event.key === "Spacebar" || event.key === "Space") &&
+        this.currentState === this.states.DIALOG
+      ) {
+        event.preventDefault();
+        this.advanceDialog();
+      }
+    });
+
     // Loadout buttons
     const costs = { speed: 20, health: 30, djump: 20, wjump: 20 };
 
@@ -482,6 +513,7 @@ export default class Game {
     this.ui.menu.classList.remove("active");
     this.ui.upgrades.classList.remove("active");
     this.ui.hud.classList.remove("active");
+    if (this.ui.dialog) this.ui.dialog.classList.remove("active");
     this.ui.gameOver.classList.remove("active");
 
     // Show current screen
@@ -495,6 +527,10 @@ export default class Game {
         break;
       case this.states.PLAYING:
         this.ui.hud.classList.add("active");
+        break;
+      case this.states.DIALOG:
+        if (this.ui.dialog) this.ui.dialog.classList.add("active");
+        this.updateDialog();
         break;
       case this.states.GAMEOVER:
         this.ui.gameOver.classList.add("active");
@@ -556,6 +592,56 @@ export default class Game {
     this.sessionSkillPoints++;
     this.score += 50; // Keep the score reward for collecting fruit
     this.updateHUD();
+  }
+
+  startDialog(lines, speaker = "Terranox", callback = null) {
+    this.dialogLines = Array.isArray(lines) ? lines : [lines];
+    this.dialogLineIndex = 0;
+    this.dialogSpeaker = speaker;
+    this.dialogCallback = typeof callback === "function" ? callback : null;
+    this.setState(this.states.DIALOG);
+  }
+
+  advanceDialog() {
+    if (this.dialogLineIndex < this.dialogLines.length - 1) {
+      this.dialogLineIndex += 1;
+      this.updateDialog();
+    } else {
+      const callback = this.dialogCallback;
+      this.dialogCallback = null;
+      if (callback) {
+        callback();
+      } else {
+        this.endRun();
+      }
+    }
+  }
+
+  updateDialog() {
+    if (this.ui.dialogText) {
+      this.ui.dialogText.innerText = this.dialogLines[this.dialogLineIndex] || "";
+    }
+    if (this.ui.dialogSpeaker) {
+      this.ui.dialogSpeaker.innerText = this.dialogSpeaker;
+    }
+    if (this.ui.dialogPlayerBox && this.ui.dialogOtherBox && this.ui.dialogOtherName && this.ui.dialogOtherSprite) {
+      const speaker = this.dialogSpeaker.toLowerCase();
+      const isPlayerStory =
+        speaker.includes("wanderer") ||
+        speaker.includes("player") ||
+        speaker.includes("explorer") ||
+        speaker.includes("unknown") ||
+        speaker.includes("ark-01");
+      const isPenguinSpeaking = speaker.includes("glacielle") || speaker.includes("penguin");
+
+      this.ui.dialogOtherName.innerText = this.dialogSpeaker;
+      this.ui.dialogPlayerBox.classList.toggle("active", isPlayerStory);
+      this.ui.dialogOtherBox.classList.toggle("active", !isPlayerStory);
+      this.ui.dialogOtherBox.style.display = isPlayerStory ? "none" : "flex";
+
+      this.ui.dialogOtherSprite.classList.toggle("dialog-sprite-pengu", isPenguinSpeaking);
+      this.ui.dialogOtherSprite.classList.toggle("dialog-sprite-dino", !isPenguinSpeaking);
+    }
   }
 
   updateScore(deltaTime) {
