@@ -73,7 +73,8 @@ export default class Game {
   }
 
   resetLoadout() {
-    this.currentSP = this.maxSP;
+    this.currentSP = this.totalCoins;
+
     this.loadout = {
       speed: 0,
       health: 0,
@@ -83,6 +84,7 @@ export default class Game {
       tri: false,
       pengu: false,
     };
+
     this.updateUI();
   }
 
@@ -282,7 +284,9 @@ export default class Game {
       .addEventListener("click", () => {
         if (this.loadout.speed < 3 && this.currentSP >= costs.speed) {
           this.loadout.speed++;
-          this.currentSP -= costs.speed;
+          this.totalCoins -= costs.speed;
+          this.currentSP = this.totalCoins;
+          localStorage.setItem("hordeless_coins", this.totalCoins);
           this.updateUI();
         }
       });

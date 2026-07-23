@@ -18,7 +18,7 @@ export const Levels = [
     boxes: [
       { x: 400, y: 150 },
       { x: 450, y: 150 },
-      { x: 1000, y: 150 },
+      { x: 1000, y: 140 },
       { x: 1200, y: 100 },
     ],
     enemies: [
@@ -30,7 +30,7 @@ export const Levels = [
       { x: 1300, count: 4 }, // gap spikes
     ],
     trampolines: [
-      { x: 800, y: 292 }, // ground level is 360-40 = 320, minus 28 = 292
+      { x: 1200, y: 292 }, // ground level is 360-40 = 320, minus 28 = 292
     ],
   },
   {

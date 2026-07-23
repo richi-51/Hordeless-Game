@@ -37,11 +37,12 @@ export default class BoxManager {
       : this.initialBoxes;
     for (let b of boxesToLoad) {
       this.boxes.push({
-        x: b.x,
+        x: b.x + 2, // collision digeser sedikit ke kanan
         y: b.y,
-        width: 32,
+        width: 32, // collision dipersempit
         height: 28,
-        state: "idle", // 'idle' or 'breaking'
+        drawX: b.x, // posisi gambar asli
+        state: "idle",
         breakTimer: 0,
         isBox: true,
       });
@@ -94,7 +95,7 @@ export default class BoxManager {
       if (box.state === "idle") {
         this.idleSprite.draw(
           ctx,
-          box.x - cameraX,
+          box.drawX - cameraX,
           box.y,
           false,
           scaleX,
@@ -104,7 +105,7 @@ export default class BoxManager {
         this.breakSprite.update(0.016); // force update
         this.breakSprite.draw(
           ctx,
-          box.x - cameraX,
+          box.drawX - cameraX,
           box.y,
           false,
           scaleX,

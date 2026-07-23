@@ -85,8 +85,16 @@ export default class BossManager {
       this.boss = {
         x: level.boss.x,
         y: level.boss.y,
+
         width: 79,
         height: 69,
+
+        hitbox: {
+          left: 8,
+          right: 8,
+          top: 6,
+          bottom: 4,
+        },
         health: level.boss.health,
         maxHealth: level.boss.health,
         state: "idle",
@@ -171,8 +179,8 @@ export default class BossManager {
     if (
       crossedTop &&
       player.vy > 0 &&
-      player.x + player.width > this.boss.x &&
-      player.x < this.boss.x + this.boss.width
+      player.x + player.width > this.boss.x + this.boss.hitbox.left &&
+      player.x < this.boss.x + this.boss.width - this.boss.hitbox.right
     ) {
       // damage 1 for normal stomp; if player is in a powered attack animation, allow 2
       const damage = player.form === "normal" ? 1 : player.isAttacking ? 2 : 1;
@@ -266,7 +274,8 @@ export default class BossManager {
       };
 
       if (
-        attackHitbox.x < this.boss.x + this.boss.width &&
+        attackHitbox.x <
+          this.boss.x + this.boss.width - this.boss.hitbox.right &&
         attackHitbox.x + attackHitbox.width > this.boss.x &&
         attackHitbox.y < this.boss.y + this.boss.height &&
         attackHitbox.y + attackHitbox.height > this.boss.y
