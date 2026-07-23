@@ -60,6 +60,7 @@ export default class BossManager {
     this.redAlpha = 0;
     this.triggered = false;
     this.boss = null;
+    this.onBossDefeated = null;
   }
 
   getFrameBounds() {
@@ -262,6 +263,10 @@ export default class BossManager {
         this.boss.state = "death";
         this.boss.stateTimer = 0;
         audioManager.play("kill");
+        if (typeof this.onBossDefeated === "function") {
+          this.onBossDefeated();
+          this.onBossDefeated = null;
+        }
       }
     } else {
       // side contact hurts player

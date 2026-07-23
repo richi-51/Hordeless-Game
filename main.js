@@ -86,6 +86,29 @@ game.onStartRun = (upgrades) => {
   );
   enemies.reset(currentLevel.enemies, effects);
   bossManager.reset(currentLevel, player);
+  bossManager.onBossDefeated = () => {
+    if (game.currentLevelIndex === 1) {
+      game.startDialog(
+        [
+          "Following strange energy signals left behind by the fleeing corruption, the Wanderer reaches another planet.",
+          "A frozen ocean world. Snow never melts. Auroras cover the sky. Ice stretches beyond the horizon.",
+          "But once again... the inhabitants have become monsters.",
+          "While searching abandoned ice temples, the explorer discovers Glacielle, the Penguin Spirit.",
+          "Glacielle: \"Free my people... before this world becomes another empty shell.\"",
+          "The sacred seal is broken. Glacielle grants the Sacred Penguin Fruit.",
+          "By consuming it, the explorer gains the ability to transform into the Penguin Spirit.",
+          "Together, they push through corrupted glaciers and frozen temples until finally reaching the Devil himself.",
+          "Press Space or click to continue to Level 3.",
+        ],
+        "Glacielle",
+        () => {
+          game.score += 500;
+          game.unlockLevel(2);
+          game.prepareLevel(2);
+        },
+      );
+    }
+  };
   items.reset(LEVEL_WIDTH);
   effects.reset();
   boxes.reset(currentLevel.boxes);
@@ -300,16 +323,70 @@ function gameLoop(timestamp) {
       player.y + player.height >= GAME_HEIGHT - 40 - 64
     ) {
       if (!bossManager.boss || !bossManager.boss.alive) {
-        if (game.currentLevelIndex < 2) {
-          // Completed a level, unlock the next one and move to its preparation screen
-          game.score += 500;
-          game.unlockLevel(game.currentLevelIndex + 1);
-          game.prepareLevel(game.currentLevelIndex + 1);
+        if (game.currentLevelIndex === 0) {
+          game.startDialog(
+            [
+              "You have cleared the first trial.",
+              "A distant roar echoes as the path to the next arena opens.",
+              "Terranox: \"Well done, fighter. Prepare yourself for the next challenge.\"",
+              "Press Space or click to continue to Level 2.",
+            ],
+            "Terranox",
+            () => {
+              game.score += 500;
+              game.unlockLevel(1);
+              game.prepareLevel(1);
+            },
+          );
+        } else if (game.currentLevelIndex === 1) {
+          game.startDialog(
+            [
+              "Following strange energy signals left behind by the fleeing corruption, the Wanderer reaches another planet.",
+              "A frozen ocean world. Snow never melts. Auroras cover the sky. Ice stretches beyond the horizon.",
+              "But once again... the inhabitants have become monsters.",
+              "While searching abandoned ice temples, the explorer discovers Glacielle, the Penguin Spirit.",
+              "Glacielle: \"Free my people... before this world becomes another empty shell.\"",
+              "The sacred seal is broken. Glacielle grants the Sacred Penguin Fruit.",
+              "By consuming it, the explorer gains the power to transform into the Penguin Spirit.",
+              "Together, they push through corrupted glaciers and frozen temples until finally reaching the Devil himself.",
+              "Press Space or click to continue to Level 3.",
+            ],
+            "Glacielle",
+            () => {
+              game.score += 500;
+              game.unlockLevel(2);
+              game.prepareLevel(2);
+            },
+          );
         } else {
           game.score += 500;
           game.unlockLevel(2);
           game.victory = true;
-          game.endRun();
+          game.startDialog(
+            [
+              "Back aboard ARK-01, the explorer reviews the ship's navigation system.",
+              "The scanner suddenly activates.",
+              "One.",
+              "Two.",
+              "Ten.",
+              "Hundreds.",
+              "Thousands.",
+              "Across the galaxy...",
+              "Planet after planet emits the same corrupted energy.",
+              "The Devil has already reached countless civilizations.",
+              "The Wanderer is no longer searching only for humanity's new home.",
+              "He has become the guardian of every world still worth saving.",
+              "The navigation computer highlights the next destination.",
+              "UNKNOWN PLANET DETECTED",
+              "Corruption Level: ██████████",
+              "Guardian Spirit: Unknown",
+              "The explorer grips his helmet.",
+              "The engines ignite.",
+              "His journey continues.",
+            ],
+            "Wanderer",
+            () => game.endRun(),
+          );
         }
       }
     }

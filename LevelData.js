@@ -101,7 +101,7 @@ export const Levels = [
     boss: {
       x: 4600,
       y: 240,
-      health: 20,
+      health: 1,
       triggerX: 4100,
     },
   },
