@@ -244,11 +244,6 @@ export default class BossManager {
     const crossedTop = prevBottom <= bossTop && currBottom >= bossTop;
 
     if (crossedTop && player.vy > 0 && overlappingX) {
-    if (
-      crossedTop &&
-      player.vy > 0 &&
-      overlappingX
-    ) {
       // damage 1 for normal stomp; if player is in a powered attack animation, allow 2
       const damage = player.form === "normal" ? 1 : player.isAttacking ? 2 : 1;
       this.boss.health -= damage;
