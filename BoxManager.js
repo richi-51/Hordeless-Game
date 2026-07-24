@@ -30,15 +30,50 @@ export default class BoxManager {
     ];
   }
 
-  reset(levelBoxes = null) {
+  reset(levelBoxes = null, terrainData = [], gapsData = []) {
     this.boxes = [];
+    const groundLevel = 280; // gameHeight (320) - 40
     const boxesToLoad = Array.isArray(levelBoxes)
       ? levelBoxes
       : this.initialBoxes;
+
     for (let b of boxesToLoad) {
+      // Find the highest standing surface (lowest y) at this box's x
+      const boxCenterX = b.x + 16;
+      let surfaceY = groundLevel;
+
+      // Check if over a gap (no ground beneath)
+      const overGap =
+        Array.isArray(gapsData) &&
+        gapsData.some(
+          (gap) => boxCenterX > gap.x && boxCenterX < gap.x + gap.width,
+        );
+      if (overGap) surfaceY = Infinity;
+
+      // Check terrain — use the highest terrain surface at this x
+      if (Array.isArray(terrainData)) {
+        for (let t of terrainData) {
+          if (boxCenterX >= t.x && boxCenterX <= t.x + t.width && t.y < surfaceY) {
+            surfaceY = t.y;
+          }
+        }
+      }
+
+      // Fallback if no surface found (shouldn't happen)
+      if (!isFinite(surfaceY)) surfaceY = groundLevel;
+
+      // Calculate hittable box Y position:
+      // Player standing head: surfaceY - 32
+      // Player jump peak head: surfaceY - 32 - 67 ≈ surfaceY - 99
+      // Box must satisfy:
+      //   box.y + 28 < surfaceY - 32  (player can walk under)
+      //   box.y > surfaceY - 99        (player can reach by jumping)
+      // Sweet spot: surfaceY - 115 (elevated high above ground, easily hittable with jump)
+      const boxY = surfaceY - 115;
+
       this.boxes.push({
         x: b.x + 2, // collision digeser sedikit ke kanan
-        y: b.y,
+        y: boxY,
         width: 32, // collision dipersempit
         height: 28,
         drawX: b.x, // posisi gambar asli

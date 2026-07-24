@@ -59,8 +59,9 @@ export default class TrampolineManager {
                 // If player's bottom overlaps the trampoline vertically and they overlap horizontally
                 if (playerBottom >= t.y && playerBottom <= t.y + t.height && playerRight > t.x && player.x < t.x + t.width) {
                     player.y = t.y - player.height;
-                    player.vy = -850;
-                    player.trampolineBoostTimer = 0.22;
+                    player.vy = -760;
+                    player.trampolineBoostOriginY = player.y;
+                    player.trampolineBoostTimer = Math.max(player.trampolineBoostTimer, player.maxTrampolineBoostTime || 0.16);
                     player.grounded = false;
                     audioManager.play('trampoline');
                     t.state = 'jumping';

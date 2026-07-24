@@ -63,8 +63,46 @@ export default class ItemManager {
     }
 
     spawn(levelWidth) {
-        const y = this.gameHeight - 40 - 32;
-        const x = 200 + Math.random() * (levelWidth - 400); 
+        const groundY = this.gameHeight - 40 - 32;
+        const levelData = this.game?.currentLevel || null;
+        const gaps = levelData?.gaps || [];
+        const terrain = levelData?.terrain || [];
+
+        // Try up to 10 times to find a valid spawn position
+        let x = 0;
+        let y = groundY;
+        let valid = false;
+        for (let attempt = 0; attempt < 10; attempt++) {
+            x = 200 + Math.random() * (levelWidth - 400);
+            y = groundY;
+            
+            // Check not inside a gap
+            const inGap = gaps.some(gap => x + 16 > gap.x && x < gap.x + gap.width);
+            if (inGap) continue;
+
+            // Check not inside a terrain block
+            const inTerrain = terrain.some(t => 
+                x + 32 > t.x && x < t.x + t.width && 
+                y + 32 > t.y && y < t.y + t.height
+            );
+            if (inTerrain) {
+                // Try placing on top of the terrain instead
+                const overlappingTerrain = terrain.filter(t => x + 32 > t.x && x < t.x + t.width);
+                if (overlappingTerrain.length > 0) {
+                    // Place on top of the highest overlapping terrain
+                    const highestY = Math.min(...overlappingTerrain.map(t => t.y));
+                    y = highestY - 32;
+                }
+            }
+
+            valid = true;
+            break;
+        }
+        if (!valid) {
+            // Fallback: just place at a safe flat area near start
+            x = 200 + Math.random() * 300;
+            y = groundY;
+        }
         
         let type = 'coin';
         let r = Math.random();

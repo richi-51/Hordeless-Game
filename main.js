@@ -68,22 +68,30 @@ let currentLevel = null;
 
 let overviewMode = false;
 
+window.Levels = Levels;
+
 game.onStartRun = (upgrades) => {
   player.applyUpgrades(upgrades);
 
   currentLevel = Levels[game.currentLevelIndex] || Levels[0];
+  game.currentLevel = currentLevel;
 
   bgImage.src = currentLevel.bgImage;
   LEVEL_WIDTH = currentLevel.length;
   startX = 50;
   endX = LEVEL_WIDTH - 150;
 
-  platforms.reset(currentLevel.platforms);
-  enemies.reset(currentLevel.enemies, effects);
+  platforms.reset(
+    currentLevel.platforms,
+    currentLevel.terrain,
+    currentLevel.terrainColor,
+    currentLevel.grassColor,
+  );
+  enemies.reset(currentLevel.enemies, effects, currentLevel.gaps, currentLevel.terrain);
   bossManager.reset(currentLevel, player);
   items.reset(LEVEL_WIDTH);
   effects.reset();
-  boxes.reset(currentLevel.boxes);
+  boxes.reset(currentLevel.boxes, currentLevel.terrain, currentLevel.gaps);
   trampolines.reset(currentLevel.trampolines);
 
   // Spawn confetti at start for polish
@@ -110,20 +118,52 @@ let lastTime = 0;
 function drawTerrain(ctx, cameraX) {
   if (!currentLevel) return;
 
-  ctx.fillStyle = currentLevel.terrainColor;
-  ctx.fillRect(-cameraX, GAME_HEIGHT - 40, LEVEL_WIDTH, 40);
+  const baseColor = currentLevel.baseColor || "#8B4513";
+  const topColor = currentLevel.terrainColor || "#800000";
+  const grassColor = currentLevel.grassColor || "#228B22";
+  const groundLevel = GAME_HEIGHT - 40;
 
-  ctx.fillStyle = currentLevel.grassColor;
-  ctx.fillRect(-cameraX, GAME_HEIGHT - 40, LEVEL_WIDTH, 8);
+  // Render ground segments, skipping gaps
+  let groundSegments = [];
+  if (currentLevel.gaps && currentLevel.gaps.length > 0) {
+    let currentX = 0;
+    const sortedGaps = [...currentLevel.gaps].sort((a, b) => a.x - b.x);
+    for (let gap of sortedGaps) {
+      if (gap.x > currentX) {
+        groundSegments.push({ x: currentX, width: gap.x - currentX });
+      }
+      currentX = gap.x + gap.width;
+    }
+    if (currentX < LEVEL_WIDTH) {
+      groundSegments.push({ x: currentX, width: LEVEL_WIDTH - currentX });
+    }
+  } else {
+    groundSegments.push({ x: 0, width: LEVEL_WIDTH });
+  }
 
-  // Draw Spikes in a specific area
+  for (let seg of groundSegments) {
+    // Base bulk of the ground (dirt)
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(seg.x - cameraX, groundLevel + 8, seg.width, 40 - 8);
+
+    // Top band of terrain (colored)
+    ctx.fillStyle = topColor;
+    ctx.fillRect(seg.x - cameraX, groundLevel, seg.width, 8);
+
+    // Thin grass/highlight on very top
+    ctx.fillStyle = grassColor;
+    ctx.fillRect(seg.x - cameraX, groundLevel, seg.width, 4);
+  }
+
+  // Draw Spikes in specific areas
   if (spikeImage.complete && currentLevel.spikes) {
     for (let spikeZone of currentLevel.spikes) {
+      const spikeY = spikeZone.y || (groundLevel - 16);
       for (let i = 0; i < spikeZone.count; i++) {
         ctx.drawImage(
           spikeImage,
           spikeZone.x + i * 16 - cameraX,
-          GAME_HEIGHT - 40 - 16,
+          spikeY,
           16,
           16,
         );
@@ -284,12 +324,14 @@ function gameLoop(timestamp) {
       player.y + player.height >= GAME_HEIGHT - 40 - 64
     ) {
       if (!bossManager.boss || !bossManager.boss.alive) {
-        if (game.currentLevelIndex === 0) {
-          // Completed Level 1, move to Level 2 preparation
-          game.score += 500; // Bonus for completing level 1
-          game.prepareLevel(1);
+        if (game.currentLevelIndex < 2) {
+          // Completed a level, unlock the next one and move to its preparation screen
+          game.score += 500;
+          game.unlockLevel(game.currentLevelIndex + 1);
+          game.prepareLevel(game.currentLevelIndex + 1);
         } else {
-          game.score += 500; // Bonus for completing level 2
+          game.score += 500;
+          game.unlockLevel(2);
           game.victory = true;
           game.endRun();
         }

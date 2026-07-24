@@ -48,11 +48,12 @@ export default class Game {
       localStorage.getItem("hordeless_coins"),
       10,
     );
-    this.totalSkillPoints = Number.isNaN(storedSkillPoints)
+    const parsedSP = Number.isNaN(storedSkillPoints)
       ? Number.isNaN(legacySkillPoints)
         ? 20
         : legacySkillPoints
       : storedSkillPoints;
+    this.totalSkillPoints = Number.isNaN(parsedSP) ? 20 : parsedSP;
 
     // Loadout State (Resets every run)
     this.currentSP = this.totalSkillPoints;
@@ -72,6 +73,14 @@ export default class Game {
     this.sessionSkillPoints = 0;
 
     this.currentLevelIndex = 0;
+    this.totalLevels = 3;
+    const storedUnlockedLevel = Number.parseInt(
+      localStorage.getItem("hordeless_unlocked_level"),
+      10,
+    );
+    this.unlockedLevelIndex = Number.isNaN(storedUnlockedLevel)
+      ? 0
+      : Math.max(0, Math.min(this.totalLevels - 1, storedUnlockedLevel));
     this.audioSettings = {
       music: localStorage.getItem("hordeless_music") !== "false",
       sound: localStorage.getItem("hordeless_sound") !== "false",
@@ -84,14 +93,35 @@ export default class Game {
   }
 
   resetLoadout() {
+    this.loadout = {
+      speed: 0,
+      health: 0,
+      djump: false,
+      wjump: false,
+      rex: false,
+      tri: false,
+      pengu: false,
+    };
+    if (
+      Number.isNaN(this.totalSkillPoints) ||
+      typeof this.totalSkillPoints !== "number"
+    ) {
+      this.totalSkillPoints = 20;
+    }
+    this.currentSP = this.totalSkillPoints;
     this.updateUI();
   }
 
   prepareLevel(levelIndex = 0) {
+    if (levelIndex > this.unlockedLevelIndex) {
+      return false;
+    }
+
     this.currentLevelIndex = levelIndex;
     this.bankSessionSkillPoints();
     this.resetLoadout();
     this.setState(this.states.UPGRADES);
+    return true;
   }
 
   bankSessionSkillPoints() {
@@ -102,6 +132,40 @@ export default class Game {
     this.currentSP = this.totalSkillPoints;
     this.saveData();
     this.updateUI();
+  }
+
+  isLevelUnlocked(levelIndex) {
+    return levelIndex <= this.unlockedLevelIndex;
+  }
+
+  unlockLevel(levelIndex) {
+    if (levelIndex <= this.unlockedLevelIndex) return;
+    this.unlockedLevelIndex = Math.max(
+      0,
+      Math.min(this.totalLevels - 1, levelIndex),
+    );
+    localStorage.setItem("hordeless_unlocked_level", this.unlockedLevelIndex);
+    this.updateLevelButtons();
+  }
+
+  updateLevelButtons() {
+    for (let i = 1; i <= this.totalLevels; i++) {
+      const btn = document.getElementById(`btn-select-lvl${i}`);
+      if (!btn) continue;
+
+      const levelIndex = i - 1;
+      const unlocked = this.isLevelUnlocked(levelIndex);
+      btn.disabled = !unlocked;
+      btn.style.opacity = unlocked ? "1" : "0.55";
+      btn.style.cursor = unlocked ? "pointer" : "not-allowed";
+      btn.title = unlocked ? "" : "Complete the previous level first";
+    }
+  }
+
+  unlockAllLevels() {
+    this.unlockedLevelIndex = this.totalLevels - 1;
+    localStorage.setItem("hordeless_unlocked_level", this.unlockedLevelIndex);
+    this.updateLevelButtons();
   }
 
   setupButtons() {
@@ -130,6 +194,12 @@ export default class Game {
         audioManager.play("hover");
       });
     }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "\\") {
+        this.unlockAllLevels();
+      }
+    });
 
     // Add hover sound to all buttons
     const allButtons = document.querySelectorAll("button, .pixel-btn");
@@ -162,13 +232,18 @@ export default class Game {
       });
     }
 
+    this.updateLevelButtons();
+
     // Level selection buttons
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= this.totalLevels; i++) {
       const btn = document.getElementById(`btn-select-lvl${i}`);
       if (btn) {
         btn.addEventListener("click", () => {
+          const levelIndex = i - 1;
+          if (!this.isLevelUnlocked(levelIndex)) return;
+
           document.getElementById("level-menu").classList.remove("active");
-          this.currentLevelIndex = i - 1;
+          this.currentLevelIndex = levelIndex;
           this.resetLoadout();
 
           // Reset carousel position
@@ -294,9 +369,7 @@ export default class Game {
       .addEventListener("click", () => {
         if (this.loadout.speed < 3 && this.currentSP >= costs.speed) {
           this.loadout.speed++;
-          this.totalCoins -= costs.speed;
-          this.currentSP = this.totalCoins;
-          localStorage.setItem("hordeless_coins", this.totalCoins);
+          this.currentSP -= costs.speed;
           this.updateUI();
         }
       });
@@ -373,11 +446,26 @@ export default class Game {
   }
 
   saveData() {
+    if (
+      Number.isNaN(this.totalSkillPoints) ||
+      typeof this.totalSkillPoints !== "number"
+    ) {
+      this.totalSkillPoints = 20;
+    }
     localStorage.setItem("hordeless_skill_points", this.totalSkillPoints);
   }
 
   updateUI() {
     if (!this.ui.menuSP) return;
+    if (
+      Number.isNaN(this.totalSkillPoints) ||
+      typeof this.totalSkillPoints !== "number"
+    ) {
+      this.totalSkillPoints = 20;
+    }
+    if (Number.isNaN(this.currentSP) || typeof this.currentSP !== "number") {
+      this.currentSP = this.totalSkillPoints;
+    }
     this.ui.menuSP.innerText = this.currentSP;
     this.ui.lvlSpeed.innerText = `Lv ${this.loadout.speed}`;
     this.ui.lvlHealth.innerText = `Lv ${this.loadout.health}`;
