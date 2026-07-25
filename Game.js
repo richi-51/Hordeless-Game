@@ -52,25 +52,19 @@ export default class Game {
       lvlPengu: document.getElementById("lvl-pengu"),
     };
 
-    // Persistent skill point bank
-    const storedSkillPoints = Number.parseInt(
-      localStorage.getItem("hordeless_skill_points"),
-      10,
-    );
-    const legacySkillPoints = Number.parseInt(
-      localStorage.getItem("hordeless_coins"),
-      10,
-    );
-    const parsedSP = Number.isNaN(storedSkillPoints)
-      ? Number.isNaN(legacySkillPoints)
-        ? 20
-        : legacySkillPoints
-      : storedSkillPoints;
-    this.totalSkillPoints = Number.isNaN(parsedSP) ? 20 : parsedSP;
+    // Cost definition map
+    this.costs = {
+      speed: 20,
+      health: 30,
+      djump: 20,
+      wjump: 20,
+      rex: 30,
+      tri: 30,
+      pengu: 30,
+    };
 
-    // Loadout State (Resets every run)
-    this.currentSP = this.totalSkillPoints;
-    this.loadout = {
+    // Load saved loadout or set defaults
+    const defaultLoadout = {
       speed: 0,
       health: 0,
       djump: false,
@@ -79,6 +73,18 @@ export default class Game {
       tri: false,
       pengu: false,
     };
+
+    let savedLoadout = null;
+    try {
+      savedLoadout = JSON.parse(localStorage.getItem("hordeless_loadout"));
+    } catch (e) {
+      savedLoadout = null;
+    }
+    this.loadout = savedLoadout ? { ...defaultLoadout, ...savedLoadout } : defaultLoadout;
+
+    // Load banked SP
+    const storedSP = Number.parseInt(localStorage.getItem("hordeless_skill_points"), 10);
+    this.bankedSP = Number.isNaN(storedSP) ? 20 : storedSP;
 
     // Session Variables
     this.score = 0;
@@ -94,6 +100,7 @@ export default class Game {
     this.unlockedLevelIndex = Number.isNaN(storedUnlockedLevel)
       ? 0
       : Math.max(0, Math.min(this.totalLevels - 1, storedUnlockedLevel));
+
     this.audioSettings = {
       music: localStorage.getItem("hordeless_music") !== "false",
       sound: localStorage.getItem("hordeless_sound") !== "false",
@@ -105,22 +112,25 @@ export default class Game {
     this.updateUI();
   }
 
-  resetProgress(startingSP = 20) {
-    this.totalSkillPoints = startingSP;
-    this.currentSP = startingSP;
-    localStorage.setItem("hordeless_skill_points", startingSP);
-    localStorage.removeItem("hordeless_coins");
+  // Calculate total spent points directly from current loadout
+  calculateSpentSP() {
+    let spent = 0;
+    spent += this.loadout.speed * this.costs.speed;
+    spent += this.loadout.health * this.costs.health;
+    if (this.loadout.djump) spent += this.costs.djump;
+    if (this.loadout.wjump) spent += this.costs.wjump;
+    if (this.loadout.rex) spent += this.costs.rex;
+    if (this.loadout.tri) spent += this.costs.tri;
+    if (this.loadout.pengu) spent += this.costs.pengu;
+    return spent;
+  }
 
-    // Relock levels back to Level 1 (Index 0)
+  // Hard Reset (e.g. Press 'R' or 'Delete')
+  resetProgress(startingSP = 20) {
+    this.bankedSP = startingSP;
     this.unlockedLevelIndex = 0;
     localStorage.setItem("hordeless_unlocked_level", 0);
 
-    this.resetLoadout();
-    this.updateLevelButtons();
-    this.updateUI();
-  }
-
-  resetLoadout() {
     this.loadout = {
       speed: 0,
       health: 0,
@@ -130,10 +140,9 @@ export default class Game {
       tri: false,
       pengu: false,
     };
-    if (Number.isNaN(this.totalSkillPoints) || typeof this.totalSkillPoints !== "number") {
-      this.totalSkillPoints = 20;
-    }
-    this.currentSP = this.totalSkillPoints;
+
+    this.saveData();
+    this.updateLevelButtons();
     this.updateUI();
   }
 
@@ -144,7 +153,6 @@ export default class Game {
 
     this.currentLevelIndex = levelIndex;
     this.bankSessionSkillPoints();
-    this.resetLoadout();
     this.setState(this.states.UPGRADES);
     return true;
   }
@@ -152,9 +160,8 @@ export default class Game {
   bankSessionSkillPoints() {
     if (this.sessionSkillPoints <= 0) return;
 
-    this.totalSkillPoints += this.sessionSkillPoints;
+    this.bankedSP += this.sessionSkillPoints;
     this.sessionSkillPoints = 0;
-    this.currentSP = this.totalSkillPoints;
     this.saveData();
     this.updateUI();
   }
@@ -196,12 +203,11 @@ export default class Game {
   }
 
   setupButtons() {
-    // Carousel Navigation Logic
     const carousel = document.getElementById("upgrade-list");
     const btnPrev = document.getElementById("btn-carousel-prev");
     const btnNext = document.getElementById("btn-carousel-next");
     let currentScroll = 0;
-    const cardWidth = 215; // 200px width + 15px gap
+    const cardWidth = 215;
 
     if (btnPrev && btnNext && carousel) {
       btnPrev.addEventListener("click", () => {
@@ -211,8 +217,7 @@ export default class Game {
         audioManager.play("hover");
       });
       btnNext.addEventListener("click", () => {
-        let maxScroll =
-          carousel.scrollWidth - carousel.parentElement.clientWidth;
+        let maxScroll = carousel.scrollWidth - carousel.parentElement.clientWidth;
         if (maxScroll < 0) maxScroll = 0;
         currentScroll += cardWidth * 2;
         if (currentScroll > maxScroll) currentScroll = maxScroll;
@@ -230,7 +235,6 @@ export default class Game {
       }
     });
 
-    // Add hover sound to all buttons
     const allButtons = document.querySelectorAll("button, .pixel-btn");
     allButtons.forEach((btn) => {
       btn.addEventListener("mouseenter", () => {
@@ -245,9 +249,7 @@ export default class Game {
         if (bgMusic && this.audioSettings.music) {
           if (bgMusic.paused) {
             bgMusic.volume = 0.2;
-            bgMusic
-              .play()
-              .catch((e) => console.log("Audio play blocked by browser", e));
+            bgMusic.play().catch((e) => console.log("Audio play blocked", e));
           }
         } else if (bgMusic) {
           bgMusic.pause();
@@ -262,7 +264,6 @@ export default class Game {
 
     this.updateLevelButtons();
 
-    // Level selection buttons
     for (let i = 1; i <= this.totalLevels; i++) {
       const btn = document.getElementById(`btn-select-lvl${i}`);
       if (btn) {
@@ -272,7 +273,6 @@ export default class Game {
 
           document.getElementById("level-menu").classList.remove("active");
           this.currentLevelIndex = levelIndex;
-          this.resetLoadout();
 
           if (carousel) {
             currentScroll = 0;
@@ -381,103 +381,90 @@ export default class Game {
       }
     });
 
-    // Loadout buttons
-    const costs = { speed: 20, health: 30, djump: 20, wjump: 20 };
-
-    // Double Jump
+    // Double Jump Toggle
     document.getElementById("btn-upg-djump").addEventListener("click", () => {
       if (this.loadout.djump) {
         this.loadout.djump = false;
-        this.currentSP += costs.djump;
-      } else if (this.currentSP >= costs.djump) {
+        this.bankedSP += this.costs.djump;
+      } else if (this.bankedSP >= this.costs.djump) {
         this.loadout.djump = true;
-        this.currentSP -= costs.djump;
+        this.bankedSP -= this.costs.djump;
       }
+      this.saveData();
       this.updateUI();
     });
 
-    // Wall Jump
+    // Wall Jump Toggle
     document.getElementById("btn-upg-wjump").addEventListener("click", () => {
       if (this.loadout.wjump) {
         this.loadout.wjump = false;
-        this.currentSP += costs.wjump;
-      } else if (this.currentSP >= costs.wjump) {
+        this.bankedSP += this.costs.wjump;
+      } else if (this.bankedSP >= this.costs.wjump) {
         this.loadout.wjump = true;
-        this.currentSP -= costs.wjump;
+        this.bankedSP -= this.costs.wjump;
       }
+      this.saveData();
       this.updateUI();
     });
 
-    // Speed
-    document
-      .getElementById("btn-upg-speed-add")
-      .addEventListener("click", () => {
-        if (this.loadout.speed < 3 && this.currentSP >= costs.speed) {
-          this.loadout.speed++;
-          this.currentSP -= costs.speed;
-          this.updateUI();
-        }
-      });
-    document
-      .getElementById("btn-upg-speed-sub")
-      .addEventListener("click", () => {
-        if (this.loadout.speed > 0) {
-          this.loadout.speed--;
-          this.currentSP += costs.speed;
-          this.updateUI();
-        }
-      });
+    // Speed Add / Sub
+    document.getElementById("btn-upg-speed-add").addEventListener("click", () => {
+      if (this.loadout.speed < 3 && this.bankedSP >= this.costs.speed) {
+        this.loadout.speed++;
+        this.bankedSP -= this.costs.speed;
+        this.saveData();
+        this.updateUI();
+      }
+    });
+    document.getElementById("btn-upg-speed-sub").addEventListener("click", () => {
+      if (this.loadout.speed > 0) {
+        this.loadout.speed--;
+        this.bankedSP += this.costs.speed;
+        this.saveData();
+        this.updateUI();
+      }
+    });
 
-    // Health
-    document
-      .getElementById("btn-upg-health-add")
-      .addEventListener("click", () => {
-        if (this.loadout.health < 2 && this.currentSP >= costs.health) {
-          this.loadout.health++;
-          this.currentSP -= costs.health;
-          this.updateUI();
-        }
-      });
-    document
-      .getElementById("btn-upg-health-sub")
-      .addEventListener("click", () => {
-        if (this.loadout.health > 0) {
-          this.loadout.health--;
-          this.currentSP += costs.health;
-          this.updateUI();
-        }
-      });
+    // Health Add / Sub
+    document.getElementById("btn-upg-health-add").addEventListener("click", () => {
+      if (this.loadout.health < 2 && this.bankedSP >= this.costs.health) {
+        this.loadout.health++;
+        this.bankedSP -= this.costs.health;
+        this.saveData();
+        this.updateUI();
+      }
+    });
+    document.getElementById("btn-upg-health-sub").addEventListener("click", () => {
+      if (this.loadout.health > 0) {
+        this.loadout.health--;
+        this.bankedSP += this.costs.health;
+        this.saveData();
+        this.updateUI();
+      }
+    });
 
-    // Transformations (Level Requirement Check Added)
+    // Transformations
     const toggleTransformation = (type, requiredLevel) => {
-      // Check if requirement met
       if (this.unlockedLevelIndex < requiredLevel) {
         alert(`Requires beating Level ${requiredLevel} first!`);
         return;
       }
 
+      const cost = this.costs[type];
       if (this.loadout[type]) {
         this.loadout[type] = false;
-        this.currentSP += 30; // Cost is 30 SP
-      } else if (this.currentSP >= 30) {
+        this.bankedSP += cost;
+      } else if (this.bankedSP >= cost) {
         this.loadout[type] = true;
-        this.currentSP -= 30;
+        this.bankedSP -= cost;
       }
+      this.saveData();
       this.updateUI();
     };
 
-    // Dino unlocked after Level 1 (unlockedLevelIndex >= 1)
-    document
-      .getElementById("btn-upg-rex")
-      .addEventListener("click", () => toggleTransformation("rex", 1));
-    document
-      .getElementById("btn-upg-tri")
-      .addEventListener("click", () => toggleTransformation("tri", 1));
-
-    // Penguin unlocked after Level 2 (unlockedLevelIndex >= 2)
-    document
-      .getElementById("btn-upg-pengu")
-      .addEventListener("click", () => toggleTransformation("pengu", 2));
+    document.getElementById("btn-upg-rex").addEventListener("click", () => toggleTransformation("rex", 1));
+    document.getElementById("btn-upg-tri").addEventListener("click", () => toggleTransformation("tri", 1));
+    document.getElementById("btn-upg-pengu").addEventListener("click", () => toggleTransformation("pengu", 2));
   }
 
   setAudioSetting(type, enabled) {
@@ -500,21 +487,14 @@ export default class Game {
   }
 
   saveData() {
-    if (Number.isNaN(this.totalSkillPoints) || typeof this.totalSkillPoints !== "number") {
-      this.totalSkillPoints = 20;
-    }
-    localStorage.setItem("hordeless_skill_points", this.totalSkillPoints);
+    localStorage.setItem("hordeless_skill_points", this.bankedSP);
+    localStorage.setItem("hordeless_loadout", JSON.stringify(this.loadout));
   }
 
   updateUI() {
     if (!this.ui.menuSP) return;
-    if (Number.isNaN(this.totalSkillPoints) || typeof this.totalSkillPoints !== "number") {
-      this.totalSkillPoints = 20;
-    }
-    if (Number.isNaN(this.currentSP) || typeof this.currentSP !== "number") {
-      this.currentSP = this.totalSkillPoints;
-    }
-    this.ui.menuSP.innerText = this.currentSP;
+
+    this.ui.menuSP.innerText = this.bankedSP;
     this.ui.lvlSpeed.innerText = `Lv ${this.loadout.speed}`;
     this.ui.lvlHealth.innerText = `Lv ${this.loadout.health}`;
     this.ui.lvlDjump.innerText = this.loadout.djump ? "ON" : "OFF";
@@ -523,7 +503,6 @@ export default class Game {
     this.ui.lvlWjump.style.color = this.loadout.wjump ? "#4CAF50" : "white";
 
     if (this.ui.lvlRex) {
-      // Dino Lock Check (Level 1 req)
       const dinoUnlocked = this.unlockedLevelIndex >= 1;
       this.ui.lvlRex.innerText = dinoUnlocked ? (this.loadout.rex ? "ON" : "OFF") : "LOCKED";
       this.ui.lvlRex.style.color = dinoUnlocked ? (this.loadout.rex ? "#4CAF50" : "white") : "#ff5252";
@@ -531,7 +510,6 @@ export default class Game {
       this.ui.lvlTri.innerText = dinoUnlocked ? (this.loadout.tri ? "ON" : "OFF") : "LOCKED";
       this.ui.lvlTri.style.color = dinoUnlocked ? (this.loadout.tri ? "#4CAF50" : "white") : "#ff5252";
 
-      // Penguin Lock Check (Level 2 req)
       const penguUnlocked = this.unlockedLevelIndex >= 2;
       this.ui.lvlPengu.innerText = penguUnlocked ? (this.loadout.pengu ? "ON" : "OFF") : "LOCKED";
       this.ui.lvlPengu.style.color = penguUnlocked ? (this.loadout.pengu ? "#4CAF50" : "white") : "#ff5252";
@@ -541,14 +519,12 @@ export default class Game {
   setState(newState) {
     this.currentState = newState;
 
-    // Hide all screens
     this.ui.menu.classList.remove("active");
     this.ui.upgrades.classList.remove("active");
     this.ui.hud.classList.remove("active");
     if (this.ui.dialog) this.ui.dialog.classList.remove("active");
     this.ui.gameOver.classList.remove("active");
 
-    // Show current screen
     switch (newState) {
       case this.states.MENU:
         this.ui.menu.classList.add("active");
