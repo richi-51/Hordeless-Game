@@ -309,7 +309,19 @@ function gameLoop(timestamp) {
   if (isNaN(deltaTime)) deltaTime = 0;
   lastTime = timestamp;
   if (deltaTime > 0.1) deltaTime = 0.1;
-
+  // Toggle attack control visibility: only show when player is Dino (rex/tri)
+  try {
+    const attackEl = document.getElementById('controls-attack');
+    if (attackEl) {
+      if (player.form === 'rex' || player.form === 'tri') {
+        attackEl.style.display = '';
+      } else {
+        attackEl.style.display = 'none';
+      }
+    }
+  } catch (e) {
+    // ignore DOM errors in non-browser contexts
+  }
   if (bgPattern) {
     ctx.save();
     ctx.fillStyle = bgPattern;
