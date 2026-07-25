@@ -105,6 +105,21 @@ export default class Game {
     this.updateUI();
   }
 
+  resetProgress(startingSP = 20) {
+    this.totalSkillPoints = startingSP;
+    this.currentSP = startingSP;
+    localStorage.setItem("hordeless_skill_points", startingSP);
+    localStorage.removeItem("hordeless_coins");
+
+    // Relock levels back to Level 1 (Index 0)
+    this.unlockedLevelIndex = 0;
+    localStorage.setItem("hordeless_unlocked_level", 0);
+
+    this.resetLoadout();
+    this.updateLevelButtons();
+    this.updateUI();
+  }
+
   resetLoadout() {
     this.loadout = {
       speed: 0,
@@ -159,6 +174,7 @@ export default class Game {
     );
     localStorage.setItem("hordeless_unlocked_level", this.unlockedLevelIndex);
     this.updateLevelButtons();
+    this.updateUI();
   }
 
   updateLevelButtons() {
@@ -179,6 +195,7 @@ export default class Game {
     this.unlockedLevelIndex = this.totalLevels - 1;
     localStorage.setItem("hordeless_unlocked_level", this.unlockedLevelIndex);
     this.updateLevelButtons();
+    this.updateUI();
   }
 
   setupButtons() {
@@ -191,13 +208,12 @@ export default class Game {
 
     if (btnPrev && btnNext && carousel) {
       btnPrev.addEventListener("click", () => {
-        currentScroll -= cardWidth * 2; // scroll 2 cards
+        currentScroll -= cardWidth * 2;
         if (currentScroll < 0) currentScroll = 0;
         carousel.style.transform = `translateX(-${currentScroll}px)`;
         audioManager.play("hover");
       });
       btnNext.addEventListener("click", () => {
-        // Max scroll is total width - window width
         let maxScroll =
           carousel.scrollWidth - carousel.parentElement.clientWidth;
         if (maxScroll < 0) maxScroll = 0;
@@ -212,6 +228,9 @@ export default class Game {
       if (event.key === "\\") {
         this.unlockAllLevels();
       }
+      if (event.key === "r" || event.key === "Delete") {
+        this.resetProgress(20);
+      }
     });
 
     // Add hover sound to all buttons
@@ -222,14 +241,13 @@ export default class Game {
       });
     });
 
-    // Main Play Button now opens Skill Preparation for Level 1
     const btnPlay = document.getElementById("btn-play");
     if (btnPlay) {
       btnPlay.addEventListener("click", () => {
         const bgMusic = document.getElementById("bg-music");
         if (bgMusic && this.audioSettings.music) {
           if (bgMusic.paused) {
-            bgMusic.volume = 0.2; // Adjust BGM volume here so it's not too loud
+            bgMusic.volume = 0.2;
             bgMusic
               .play()
               .catch((e) => console.log("Audio play blocked by browser", e));
@@ -259,7 +277,6 @@ export default class Game {
           this.currentLevelIndex = levelIndex;
           this.resetLoadout();
 
-          // Reset carousel position
           if (carousel) {
             currentScroll = 0;
             carousel.style.transform = `translateX(0px)`;
@@ -434,8 +451,14 @@ export default class Game {
         }
       });
 
-    // Transformations
-    const toggleTransformation = (type) => {
+    // Transformations (Level Requirement Check Added)
+    const toggleTransformation = (type, requiredLevel) => {
+      // Check if requirement met
+      if (this.unlockedLevelIndex < requiredLevel) {
+        alert(`Requires beating Level ${requiredLevel} first!`);
+        return;
+      }
+
       if (this.loadout[type]) {
         this.loadout[type] = false;
         this.currentSP += 30; // Cost is 30 SP
@@ -446,15 +469,18 @@ export default class Game {
       this.updateUI();
     };
 
+    // Dino unlocked after Level 1 (unlockedLevelIndex >= 1)
     document
       .getElementById("btn-upg-rex")
-      .addEventListener("click", () => toggleTransformation("rex"));
+      .addEventListener("click", () => toggleTransformation("rex", 1));
     document
       .getElementById("btn-upg-tri")
-      .addEventListener("click", () => toggleTransformation("tri"));
+      .addEventListener("click", () => toggleTransformation("tri", 1));
+
+    // Penguin unlocked after Level 2 (unlockedLevelIndex >= 2)
     document
       .getElementById("btn-upg-pengu")
-      .addEventListener("click", () => toggleTransformation("pengu"));
+      .addEventListener("click", () => toggleTransformation("pengu", 2));
   }
 
   setAudioSetting(type, enabled) {
@@ -506,12 +532,18 @@ export default class Game {
     this.ui.lvlWjump.style.color = this.loadout.wjump ? "#4CAF50" : "white";
 
     if (this.ui.lvlRex) {
-      this.ui.lvlRex.innerText = this.loadout.rex ? "ON" : "OFF";
-      this.ui.lvlRex.style.color = this.loadout.rex ? "#4CAF50" : "white";
-      this.ui.lvlTri.innerText = this.loadout.tri ? "ON" : "OFF";
-      this.ui.lvlTri.style.color = this.loadout.tri ? "#4CAF50" : "white";
-      this.ui.lvlPengu.innerText = this.loadout.pengu ? "ON" : "OFF";
-      this.ui.lvlPengu.style.color = this.loadout.pengu ? "#4CAF50" : "white";
+      // Dino Lock Check (Level 1 req)
+      const dinoUnlocked = this.unlockedLevelIndex >= 1;
+      this.ui.lvlRex.innerText = dinoUnlocked ? (this.loadout.rex ? "ON" : "OFF") : "LOCKED";
+      this.ui.lvlRex.style.color = dinoUnlocked ? (this.loadout.rex ? "#4CAF50" : "white") : "#ff5252";
+
+      this.ui.lvlTri.innerText = dinoUnlocked ? (this.loadout.tri ? "ON" : "OFF") : "LOCKED";
+      this.ui.lvlTri.style.color = dinoUnlocked ? (this.loadout.tri ? "#4CAF50" : "white") : "#ff5252";
+
+      // Penguin Lock Check (Level 2 req)
+      const penguUnlocked = this.unlockedLevelIndex >= 2;
+      this.ui.lvlPengu.innerText = penguUnlocked ? (this.loadout.pengu ? "ON" : "OFF") : "LOCKED";
+      this.ui.lvlPengu.style.color = penguUnlocked ? (this.loadout.pengu ? "#4CAF50" : "white") : "#ff5252";
     }
   }
 
@@ -562,7 +594,6 @@ export default class Game {
     this.setState(this.states.PLAYING);
     audioManager.play("start");
 
-    // Setup Player Stats based on loadout
     if (this.onStartRun) {
       this.onStartRun(this.loadout);
     }
@@ -599,7 +630,7 @@ export default class Game {
 
   addSkillPoint() {
     this.sessionSkillPoints++;
-    this.score += 50; // Keep the score reward for collecting fruit
+    this.score += 50;
     this.updateHUD();
   }
 
@@ -655,7 +686,7 @@ export default class Game {
 
   updateScore(deltaTime) {
     this.survivalTime += deltaTime;
-    this.score += deltaTime * 10; // 10 points per second
+    this.score += deltaTime * 10;
     this.updateHUD();
   }
 
