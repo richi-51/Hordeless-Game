@@ -16,8 +16,8 @@ export default class Player {
         this.baseMaxHealth = 3;
         
         this.maxSpeed = this.baseMaxSpeed;
-        this.acceleration = 400; // Decreased to show acceleration clearly
-        this.friction = 300;     // Decreased to show deceleration (sliding) clearly
+        this.acceleration = 400;
+        this.friction = 300;
         this.gravity = 1200;
         this.jumpStrength = this.baseJumpStrength;
         this.trampolineBoostTimer = 0;
@@ -35,7 +35,7 @@ export default class Player {
         this.attackHitRegistered = false;
         this.dropDownTimer = 0;
 
-        this.x = 50; // Start at left
+        this.x = 50;
         this.y = this.gameHeight - this.height - 40;
         this.prevX = this.x;
         this.prevY = this.y;
@@ -64,7 +64,8 @@ export default class Player {
                 djump: new Sprite(`${basePath}/Double Jump (32x32).png`, 32, 32, 6, 0.05),
                 wjump: new Sprite(`${basePath}/Wall Jump (32x32).png`, 32, 32, 5, 0.05),
                 fall: new Sprite(`${basePath}/Fall (32x32).png`, 32, 32, 1, 0.1),
-                hit: new Sprite(`${basePath}/Hit (32x32).png`, 32, 32, 7, 0.05)
+                hit: new Sprite(`${basePath}/Hit (32x32).png`, 32, 32, 7, 0.05),
+                attack: new Sprite(`${basePath}/Run (32x32).png`, 32, 32, 12, 0.05)
             },
             rex: {
                 idle: new Sprite('/Assets/Free/Bosses_Dino_Rex/Dino Rex/dino_rex_idle.png', 128, 128, 5, 0.1),
@@ -82,7 +83,7 @@ export default class Player {
                 djump: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 1, 0.1),
                 wjump: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 1, 0.1),
                 fall: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_idle.png', 384, 128, 1, 0.1),
-                attack: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_attack_A.png', 384, 128, 21, 0.05) // Capped at 21 frames (8064 pixels) to prevent 8192 browser texture limit cut off
+                attack: new Sprite('/Assets/Free/Bosses_Dino_Tri/Dino Tri/dino_tri_attack_A.png', 384, 128, 21, 0.05)
             },
             pengu: {
                 idle: new Sprite('/Assets/Free/Bosses_Pengu/Pengu/pengu_idle.png', 128, 128, 5, 0.1),
@@ -100,7 +101,7 @@ export default class Player {
         this.attackDuration = 0;
         this.currentSprite = this.sprites.normal.idle;
         this.deathSprite = new Sprite('/Assets/Jesus/HandsUp2.png', 89, 128, 1, 0.1);
-        // Load shadow image
+
         if (!Player.shadowImage) {
             Player.shadowImage = new Image();
             Player.shadowImage.src = '/Assets/Free/Other/Shadow.png';
@@ -113,13 +114,13 @@ export default class Player {
             let oldHeight = this.height;
             if (formName === 'normal') {
                 this.width = 24;
-                this.height = 24; // Trimmed top transparent pixels for 32x32 frog
+                this.height = 24;
             } else if (formName === 'rex') {
                 this.width = 40;
-                this.height = 48; // Trimmed top transparent pixels for 64x64 rex
+                this.height = 48;
             } else if (formName === 'tri') {
                 this.width = 80;
-                this.height = 36; // Very flat dinosaur
+                this.height = 36;
             } else if (formName === 'pengu') {
                 this.width = 40;
                 this.height = 50;
@@ -127,8 +128,8 @@ export default class Player {
                 this.width = 32;
                 this.height = 32;
             }
-            this.y -= (this.height - oldHeight); // Adjust y position so we don't clip into ground
-            this.isAttacking = false; // Reset attack state upon transformation to prevent missing sprite crashes
+            this.y -= (this.height - oldHeight);
+            this.isAttacking = false;
             this.attackTimer = 0;
             this.attackDuration = 0;
             this.currentSprite = this.sprites[formName].idle;
@@ -138,9 +139,8 @@ export default class Player {
     revertForm() {
         if (this.form !== 'normal') {
             this.transform('normal');
-            this.isInvulnerable = true;
-            this.invulnerableTimer = this.invulnerableDuration; // Actually use duration instead of 0
-            this.vy = -300; // Knockback
+            this.invulnerableTimer = this.invulnerableDuration;
+            this.vy = -300;
         }
     }
 
@@ -159,14 +159,13 @@ export default class Player {
         this.width = 28;
         this.height = 28;
         this.game.updateHUD(0);
-        import('./AudioManager.js').then(({ audioManager }) => {
-            audioManager.stop('heavenly');
-            audioManager.play('heavenly');
-        });
+
+        audioManager.stop('heavenly');
+        audioManager.play('heavenly');
     }
 
     takeDamage() {
-        if (this.isInvulnerable || this.isDying) return;
+        if (this.invulnerableTimer > 0 || this.isDying) return;
         
         audioManager.play('hurt');
 
@@ -176,9 +175,8 @@ export default class Player {
         }
 
         this.health--;
-        this.isInvulnerable = true;
         this.invulnerableTimer = this.invulnerableDuration;
-        this.vy = -300; // Add knockback for normal form too
+        this.vy = -300;
         this.game.updateHUD(this.health);
 
         if (this.health <= 0) {
@@ -193,7 +191,6 @@ export default class Player {
         else if (upgrades.speed >= 3) speedMultiplier = 1.10;
         
         this.maxSpeed = this.baseMaxSpeed * speedMultiplier;
-        
         this.jumpStrength = this.baseJumpStrength;
         this.health = this.baseMaxHealth + upgrades.health;
         this.maxJumps = upgrades.djump ? 2 : 1;
@@ -221,7 +218,6 @@ export default class Player {
             }
         }
         
-        // Draw Shadow
         if (!this.isDying && Player.shadowImage && Player.shadowImage.complete) {
             ctx.drawImage(Player.shadowImage, this.x + this.width / 2 - 16 - cameraX, this.y + this.height - 4, 32, 8);
         }
@@ -241,16 +237,16 @@ export default class Player {
     }
 
     update(input, deltaTime, effects) {
-        // store previous position for collision checks (used by boss stomp logic)
         this.prevX = this.x;
         this.prevY = this.y;
+
         if (this.isDying) {
             this.deathTimer += deltaTime;
             this.vx = 0;
             this.x += Math.sin(this.deathTimer * 6) * 20 * deltaTime;
             this.y += this.vy * deltaTime;
             this.vy -= 40 * deltaTime;
-            this.currentSprite.update(deltaTime);
+            if (this.currentSprite) this.currentSprite.update(deltaTime);
 
             if (this.deathTimer >= this.deathDuration && !this.deathFinished) {
                 this.deathFinished = true;
@@ -259,26 +255,25 @@ export default class Player {
             return;
         }
 
-        let wasGrounded = this.grounded;
+        const wasGrounded = this.grounded;
+        
         if (this.dropDownTimer > 0) {
             this.dropDownTimer -= deltaTime;
         }
 
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= deltaTime;
-            if (this.invulnerableTimer <= 0) {
-                this.isInvulnerable = false;
-            }
         }
 
-        // --- Horizontal Movement & Collision ---
-        if (input.keys.attack && !this.isAttacking && this.form !== 'normal') {
+        // Handle Attacks
+        if (input.keys.attack && !this.isAttacking && this.form !== 'normal' && this.sprites[this.form]?.attack) {
             this.isAttacking = true;
             this.attackTimer = this.sprites[this.form].attack.frameCount * this.sprites[this.form].attack.frameDuration;
             this.sprites[this.form].attack.currentFrame = 0;
             this.sprites[this.form].attack.frameTimer = 0;
         }
 
+        // --- ACCELERATION & DECELERATION (FIXED FOR BOTH DIRECTIONS) ---
         if (input.keys.right) {
             this.vx += this.acceleration * deltaTime;
             this.facingRight = true;
@@ -286,76 +281,72 @@ export default class Player {
             this.vx -= this.acceleration * deltaTime;
             this.facingRight = false;
         } else {
+            // Apply friction cleanly in both directions
             if (this.vx > 0) {
                 this.vx -= this.friction * deltaTime;
                 if (this.vx < 0) this.vx = 0;
             } else if (this.vx < 0) {
                 this.vx += this.friction * deltaTime;
-                if (this.vx > 0) this.vx = 0;
+                if (this.vx > 0) this.vx = 0; // Fixed: stopped zeroing out immediately
             }
         }
         
+        // Clamp maximum speed symmetrically
         if (this.vx > this.maxSpeed) this.vx = this.maxSpeed;
         if (this.vx < -this.maxSpeed) this.vx = -this.maxSpeed;
 
-        this.x += this.vx * deltaTime;
+        let solids = [];
+        if (input.platforms) solids = solids.concat(input.platforms);
+        if (input.boxes) solids = solids.concat(input.boxes);
 
+        // --- STEP 1: HORIZONTAL MOVEMENT & RESOLUTION ---
+        this.x += this.vx * deltaTime;
         this.wallSliding = false;
 
         if (this.x < 0) {
             this.x = 0;
             this.vx = 0;
-            if (this.canWallJump && !this.grounded && input.keys.left) {
+            if (this.canWallJump && !wasGrounded && input.keys.left && this.vy > 0) {
                 this.wallSliding = true;
                 this.facingRight = false; 
             }
         }
-        
-        // Collect solid objects
-        let solids = [];
-        if (input.platforms) solids = solids.concat(input.platforms);
-        if (input.boxes) solids = solids.concat(input.boxes);
 
-        // Horizontal Collision
         for (let solid of solids) {
             if (solid.oneWay) continue;
 
-            // If bounding boxes overlap (adding a small vertical threshold to prevent floor snags)
-            if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
-                this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y + 4) {
+            const solidH = solid.height || 24;
+            if (this.x < solid.x + solid.width && 
+                this.x + this.width > solid.x &&
+                this.y < solid.y + solidH && 
+                this.y + this.height > solid.y) {
                     
-                    // Moving right
-                    if (this.vx > 0) {
-                        this.x = solid.x - this.width;
-                        this.vx = 0;
-                        if (this.canWallJump && !this.grounded && input.keys.right) {
-                            this.wallSliding = true;
-                            this.facingRight = true;
-                        }
+                if (this.vx > 0) {
+                    this.x = solid.x - this.width;
+                    this.vx = 0;
+                    if (this.canWallJump && !wasGrounded && input.keys.right && this.vy > 0) {
+                        this.wallSliding = true;
+                        this.facingRight = true;
                     }
-                    // Moving left
-                    else if (this.vx < 0) {
-                        this.x = solid.x + solid.width;
-                        this.vx = 0;
-                        if (this.canWallJump && !this.grounded && input.keys.left) {
-                            this.wallSliding = true;
-                            this.facingRight = false;
-                        }
+                } else if (this.vx < 0) {
+                    this.x = solid.x + solid.width;
+                    this.vx = 0;
+                    if (this.canWallJump && !wasGrounded && input.keys.left && this.vy > 0) {
+                        this.wallSliding = true;
+                        this.facingRight = false;
                     }
                 }
+            }
         }
 
-        // --- Vertical Movement & Physics ---
+        // --- STEP 2: VERTICAL MOVEMENT & RESOLUTION ---
         let effectiveGravity = this.gravity;
         if (this.trampolineBoostTimer > 0) {
             this.trampolineBoostTimer -= deltaTime;
             if (this.trampolineBoostTimer < 0) this.trampolineBoostTimer = 0;
         }
 
-        if (
-            this.trampolineBoostOriginY !== null &&
-            this.y <= this.trampolineBoostOriginY - this.maxTrampolineHeight
-        ) {
+        if (this.trampolineBoostOriginY !== null && this.y <= this.trampolineBoostOriginY - this.maxTrampolineHeight) {
             this.vy = 0;
             this.trampolineBoostOriginY = null;
             this.trampolineBoostTimer = 0;
@@ -363,13 +354,75 @@ export default class Player {
 
         this.vy += effectiveGravity * deltaTime;
 
-        if (this.wallSliding) {
-            if (this.vy > this.wallSlideSpeed) {
-                this.vy = this.wallSlideSpeed;
+        if (this.wallSliding && this.vy > this.wallSlideSpeed) {
+            this.vy = this.wallSlideSpeed;
+        }
+
+        this.y += this.vy * deltaTime;
+
+        // Re-evaluate ground state for current frame
+        this.grounded = false; 
+
+        const groundLevel = this.gameHeight - 40; 
+        const currentLevelData = this.game?.currentLevelIndex !== undefined && window.Levels ? window.Levels[this.game.currentLevelIndex] : null;
+        let overGap = false;
+        if (currentLevelData && currentLevelData.gaps) {
+            const playerCenterX = this.x + this.width / 2;
+            overGap = currentLevelData.gaps.some(gap => playerCenterX > gap.x && playerCenterX < gap.x + gap.width);
+        }
+
+        if (!overGap && this.y + this.height >= groundLevel) {
+            this.y = groundLevel - this.height;
+            this.vy = 0;
+            this.grounded = true;
+        }
+
+        if (this.y > this.gameHeight + 30) {
+            this.takeDamage();
+            if (!this.isDying) {
+                this.x = Math.max(50, this.x - 250);
+                this.y = groundLevel - this.height - 40;
+                this.vy = -100;
+            } else {
+                this.x = Math.max(50, this.x - 100);
+                this.y = groundLevel - this.height - 60;
+                this.vy = -180;
+                return;
             }
         }
 
-        // Coyote Time Logic
+        // Vertical Collision Pass
+        for (let solid of solids) {
+            const solidH = solid.height || 24;
+            if (this.x < solid.x + solid.width && 
+                this.x + this.width > solid.x &&
+                this.y < solid.y + solidH && 
+                this.y + this.height > solid.y) {
+
+                if (solid.oneWay) {
+                    const prevBottom = this.prevY + this.height;
+                    const solidTop = solid.y;
+
+                    if (this.dropDownTimer > 0 || this.vy <= 0 || prevBottom > solidTop + 4) {
+                        continue;
+                    }
+                }
+                
+                if (this.vy > 0) {
+                    this.y = solid.y - this.height;
+                    this.vy = 0;
+                    this.grounded = true;
+                } else if (this.vy < 0) {
+                    this.y = solid.y + solidH;
+                    this.vy = 0;
+                    if (solid.isBox && solid.state === 'idle') {
+                        solid.state = 'breaking';
+                    }
+                }
+            }
+        }
+
+        // --- STEP 3: COYOTE TIME & JUMP RESOLUTION ---
         if (this.grounded) {
             this.coyoteCounter = this.coyoteTime;
             this.jumpCount = 0;
@@ -377,7 +430,7 @@ export default class Player {
             this.coyoteCounter -= deltaTime;
         }
 
-        // Jump (Consumes Input Buffer)
+        // Jump Handling
         if (input.jumpBufferCounter > 0) {
             const onOneWayPlatform = solids.some(solid => 
                 solid.oneWay &&
@@ -392,141 +445,74 @@ export default class Player {
                 this.y += 4;
                 this.vy = 100;
                 this.grounded = false;
-            } else if (this.wallSliding) {
-                // Wall Jump
+            } else if (this.coyoteCounter > 0 || this.grounded || this.jumpCount < this.maxJumps) {
                 this.vy = this.jumpStrength;
-                this.vx = this.facingRight ? -this.maxSpeed : this.maxSpeed;
-                input.jumpBufferCounter = 0; 
-                this.wallSliding = false;
-            } else if (this.coyoteCounter > 0 || this.jumpCount < this.maxJumps) {
-                this.vy = this.jumpStrength;
-                this.jumpCount++;
+                
+                if (this.coyoteCounter <= 0 && !this.grounded) {
+                    this.jumpCount++;
+                } else {
+                    this.jumpCount = 1;
+                }
+
                 audioManager.play('jump');
                 
-                if (this.coyoteCounter <= 0 && this.jumpCount > 1) {
+                if (this.jumpCount > 1 && this.sprites[this.form]?.djump) {
                     this.sprites[this.form].djump.currentFrame = 0; 
                 }
 
                 input.jumpBufferCounter = 0; 
                 this.coyoteCounter = 0; 
                 this.grounded = false;
+            } else if (this.wallSliding) {
+                this.vy = this.jumpStrength;
+                this.vx = this.facingRight ? -this.maxSpeed : this.maxSpeed;
+                input.jumpBufferCounter = 0; 
+                this.wallSliding = false;
             }
         }
 
-        // Variable Jump Height
         if (!input.keys.up && this.vy < 0) {
             this.vy *= this.jumpCutMultiplier;
         }
 
-        this.y += this.vy * deltaTime;
-
-        // Ground bounds
-        const groundLevel = this.gameHeight - 40; 
-        this.grounded = false; 
-
-        // Check if player is currently standing over a pit gap
-        const currentLevelData = this.game?.currentLevelIndex !== undefined && window.Levels ? window.Levels[this.game.currentLevelIndex] : null;
-        let overGap = false;
-        if (currentLevelData && currentLevelData.gaps) {
-            const playerCenterX = this.x + this.width / 2;
-            overGap = currentLevelData.gaps.some(gap => playerCenterX > gap.x && playerCenterX < gap.x + gap.width);
-        }
-
-        if (!overGap && this.y + this.height >= groundLevel) {
-            this.y = groundLevel - this.height;
-            this.vy = 0;
-            this.grounded = true;
-        }
-
-        // Pit Fall Check (Falling into gaps)
-        if (this.y > this.gameHeight + 30) {
-            this.takeDamage();
-            if (!this.isDying) {
-                // Safe respawn position before the pit
-                this.x = Math.max(50, this.x - 250);
-                this.y = groundLevel - this.height - 40;
-                this.vy = -100;
-            } else {
-                // Player died from pit fall - reposition to visible area for death animation
-                // so the camera doesn't show a blank screen
-                this.x = Math.max(50, this.x - 100);
-                this.y = groundLevel - this.height - 60;
-                this.vy = -180;
-                return; // Exit update immediately — death anim handled next frame by isDying check at top
-            }
-        }
-
-        // Vertical Collision (Platforms and Boxes)
-        for (let solid of solids) {
-            if (this.x < solid.x + solid.width && this.x + this.width > solid.x &&
-                this.y < solid.y + (solid.height || 24) && this.y + this.height > solid.y) {
-
-                if (solid.oneWay) {
-                    const prevBottom = this.prevY + this.height;
-                    const solidTop = solid.y;
-
-                    if (this.dropDownTimer > 0 || this.vy <= 0 || prevBottom > solidTop + 4) {
-                        continue;
-                    }
-                }
-                
-                // Moving down (falling onto platform)
-                if (this.vy > 0) {
-                    this.y = solid.y - this.height;
-                    this.vy = 0;
-                    this.grounded = true;
-                }
-                // Moving up (hitting head on platform/box)
-                else if (this.vy < 0) {
-                    this.y = solid.y + (solid.height || 24);
-                    this.vy = 0;
-                    if (solid.isBox && solid.state === 'idle') {
-                        solid.state = 'breaking';
-                    }
-                }
-            }
-        }
-
-        // Sprite Animation Logic
-        let activeSprites = this.sprites[this.form];
+        // --- STEP 4: SPRITES & PARTICLES ---
+        let activeSprites = this.sprites[this.form] || this.sprites.normal;
         
-        if (this.isAttacking) {
+        if (this.isAttacking && activeSprites.attack) {
             this.attackTimer -= deltaTime;
             this.currentSprite = activeSprites.attack;
             if (this.attackTimer <= 0) {
                 this.isAttacking = false;
                 this.attackHitRegistered = false;
             }
-        } else if (this.invulnerableTimer > 0 && this.invulnerableTimer > this.invulnerableDuration - 0.3 && this.form === 'normal') {
-             this.currentSprite = activeSprites.hit;
+        } else if (this.invulnerableTimer > 0 && this.invulnerableTimer > this.invulnerableDuration - 0.3 && activeSprites.hit) {
+            this.currentSprite = activeSprites.hit;
         } else {
-            // Animation State
             if (!this.grounded) {
-                if (this.wallSliding) {
+                if (this.wallSliding && activeSprites.wjump) {
                     this.currentSprite = activeSprites.wjump;
-                } else if (this.jumpCount > 1) {
+                } else if (this.jumpCount > 1 && activeSprites.djump) {
                     this.currentSprite = activeSprites.djump;
-                } else if (this.vy < 0) {
+                } else if (this.vy < 0 && activeSprites.jump) {
                     this.currentSprite = activeSprites.jump;
-                } else {
+                } else if (activeSprites.fall) {
                     this.currentSprite = activeSprites.fall;
                 }
             } else {
-                if (Math.abs(this.vx) > 10) {
+                if (Math.abs(this.vx) > 10 && activeSprites.run) {
                     this.currentSprite = activeSprites.run;
-                } else {
+                } else if (activeSprites.idle) {
                     this.currentSprite = activeSprites.idle;
                 }
             }
         }
         
         if (this.grounded && !wasGrounded && effects) {
-            for (let i=0; i<3; i++) {
+            for (let i = 0; i < 3; i++) {
                 effects.addEffect(this.x + this.width / 2, this.y + this.height, 'dust');
             }
         }
 
-        // Running dust
         if (this.grounded && Math.abs(this.vx) > 50 && effects) {
             if (!this.dustTimer) this.dustTimer = 0;
             this.dustTimer -= deltaTime;
@@ -536,6 +522,8 @@ export default class Player {
             }
         }
 
-        this.currentSprite.update(deltaTime);
+        if (this.currentSprite) {
+            this.currentSprite.update(deltaTime);
+        }
     }
 }
