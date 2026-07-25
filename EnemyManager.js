@@ -111,7 +111,7 @@ export default class EnemyManager {
                             enemy.vx = Math.abs(enemy.baseSpeed);
                         }
 
-                        // Set new home base on current side of wall & start cooldown
+                         // Set new home base on current side of wall & start cooldown
                         enemy.spawnX = enemy.x;
                         enemy.state = 'patrol';
                         enemy.wallStuckTimer = 1.5; 
