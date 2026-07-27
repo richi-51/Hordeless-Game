@@ -51,14 +51,14 @@ const startFlag = new Sprite(
   64,
   64,
   17,
-  0.05
+  0.05,
 );
 const endFlag = new Sprite(
   "./Assets/Free/Items/Checkpoints/End/End (Idle).png",
   64,
   64,
   1,
-  0.1
+  0.1,
 );
 
 // End NPC companion sprite tracking
@@ -76,6 +76,7 @@ let overviewMode = false;
 window.Levels = Levels;
 
 game.onStartRun = (upgrades) => {
+  player.reset();
   player.applyUpgrades(upgrades);
 
   currentLevel = Levels[game.currentLevelIndex] || Levels[0];
@@ -96,7 +97,7 @@ game.onStartRun = (upgrades) => {
       currentLevel.npcBoss.frameWidth,
       currentLevel.npcBoss.frameHeight,
       currentLevel.npcBoss.frameCount,
-      currentLevel.npcBoss.frameDuration
+      currentLevel.npcBoss.frameDuration,
     );
   } else {
     endNpcSprite = null;
@@ -106,9 +107,14 @@ game.onStartRun = (upgrades) => {
     currentLevel.platforms,
     currentLevel.terrain,
     currentLevel.terrainColor,
-    currentLevel.grassColor
+    currentLevel.grassColor,
   );
-  enemies.reset(currentLevel.enemies, effects, currentLevel.gaps, currentLevel.terrain);
+  enemies.reset(
+    currentLevel.enemies,
+    effects,
+    currentLevel.gaps,
+    currentLevel.terrain,
+  );
   bossManager.reset(currentLevel, player);
   bossManager.onBossDefeated = () => {
     if (game.currentLevelIndex === 1) {
@@ -127,9 +133,10 @@ game.onStartRun = (upgrades) => {
         "Glacielle",
         () => {
           game.score += 500;
+          game.saveLevelScore(game.score, game.currentLevelIndex);
           game.unlockLevel(2);
           game.prepareLevel(2);
-        }
+        },
       );
     }
   };
@@ -200,7 +207,7 @@ function drawTerrain(ctx, cameraX) {
           spikeZone.x + i * 16 - cameraX,
           spikeY,
           16,
-          16
+          16,
         );
       }
     }
@@ -239,7 +246,7 @@ function drawEndNPC(ctx, cameraOffsetX) {
         -renderWidth / 2,
         -renderHeight / 2,
         renderWidth,
-        renderHeight
+        renderHeight,
       );
     } else {
       ctx.drawImage(
@@ -251,7 +258,7 @@ function drawEndNPC(ctx, cameraOffsetX) {
         npcX,
         npcY,
         renderWidth,
-        renderHeight
+        renderHeight,
       );
     }
     ctx.restore();
@@ -311,12 +318,12 @@ function gameLoop(timestamp) {
   if (deltaTime > 0.1) deltaTime = 0.1;
   // Toggle attack control visibility: only show when player is Dino (rex/tri)
   try {
-    const attackEl = document.getElementById('controls-attack');
+    const attackEl = document.getElementById("controls-attack");
     if (attackEl) {
-      if (player.form === 'rex' || player.form === 'tri') {
-        attackEl.style.display = '';
+      if (player.form === "rex" || player.form === "tri") {
+        attackEl.style.display = "";
       } else {
-        attackEl.style.display = 'none';
+        attackEl.style.display = "none";
       }
     }
   } catch (e) {
@@ -444,9 +451,12 @@ function gameLoop(timestamp) {
             "Terranox",
             () => {
               game.score += 500;
+
+              game.saveLevelScore(game.score, game.currentLevelIndex);
+
               game.unlockLevel(1);
               game.prepareLevel(1);
-            }
+            },
           );
         } else if (game.currentLevelIndex === 1) {
           game.startDialog(
@@ -469,9 +479,12 @@ function gameLoop(timestamp) {
             "Glacielle",
             () => {
               game.score += 500;
+
+              game.saveLevelScore(game.score, game.currentLevelIndex);
+
               game.unlockLevel(2);
               game.prepareLevel(2);
-            }
+            },
           );
         } else {
           game.score += 500;
@@ -500,7 +513,9 @@ function gameLoop(timestamp) {
               "His journey continues.",
             ],
             "Wanderer",
-            () => game.endRun()
+            () => {
+              game.endRun();
+            },
           );
         }
       }

@@ -80,10 +80,15 @@ export default class Game {
     } catch (e) {
       savedLoadout = null;
     }
-    this.loadout = savedLoadout ? { ...defaultLoadout, ...savedLoadout } : defaultLoadout;
+    this.loadout = savedLoadout
+      ? { ...defaultLoadout, ...savedLoadout }
+      : defaultLoadout;
 
     // Load banked SP
-    const storedSP = Number.parseInt(localStorage.getItem("hordeless_skill_points"), 10);
+    const storedSP = Number.parseInt(
+      localStorage.getItem("hordeless_skill_points"),
+      10,
+    );
     this.bankedSP = Number.isNaN(storedSP) ? 20 : storedSP;
 
     // Session Variables
@@ -110,6 +115,10 @@ export default class Game {
 
     this.setupButtons();
     this.updateUI();
+
+    window.addEventListener("beforeunload", () => {
+      sessionStorage.removeItem("hordeless_top_scores");
+    });
   }
 
   // Calculate total spent points directly from current loadout
@@ -217,7 +226,8 @@ export default class Game {
         audioManager.play("hover");
       });
       btnNext.addEventListener("click", () => {
-        let maxScroll = carousel.scrollWidth - carousel.parentElement.clientWidth;
+        let maxScroll =
+          carousel.scrollWidth - carousel.parentElement.clientWidth;
         if (maxScroll < 0) maxScroll = 0;
         currentScroll += cardWidth * 2;
         if (currentScroll > maxScroll) currentScroll = maxScroll;
@@ -246,6 +256,7 @@ export default class Game {
     if (btnPlay) {
       btnPlay.addEventListener("click", () => {
         const bgMusic = document.getElementById("bg-music");
+
         if (bgMusic && this.audioSettings.music) {
           if (bgMusic.paused) {
             bgMusic.volume = 0.2;
@@ -254,11 +265,13 @@ export default class Game {
         } else if (bgMusic) {
           bgMusic.pause();
         }
+
         if (carousel) {
           currentScroll = 0;
           carousel.style.transform = `translateX(0px)`;
         }
-        this.prepareLevel(0);
+
+        this.setState(this.states.UPGRADES);
       });
     }
 
@@ -335,13 +348,38 @@ export default class Game {
       });
     }
 
-    ["btn-levels", "btn-leaderboard", "btn-achievements"].forEach((id) => {
+    ["btn-achievements"].forEach((id) => {
       const btn = document.getElementById(id);
       if (btn) {
         btn.addEventListener("click", () => {
           alert(id.replace("btn-", "").toUpperCase() + " coming soon!");
         });
       }
+    });
+
+    const btnLevels = document.getElementById("btn-levels");
+
+    if (btnLevels) {
+      btnLevels.addEventListener("click", () => {
+        this.ui.menu.classList.remove("active");
+        document.getElementById("level-menu").classList.add("active");
+      });
+    }
+
+    const btnLeaderboard = document.getElementById("btn-leaderboard");
+
+    btnLeaderboard.addEventListener("click", () => {
+      document.getElementById("main-menu").classList.remove("active");
+
+      document.getElementById("halloffame-menu").classList.add("active");
+
+      this.updateHallOfFame();
+    });
+
+    document.getElementById("btn-back-hof").addEventListener("click", () => {
+      document.getElementById("halloffame-menu").classList.remove("active");
+
+      document.getElementById("main-menu").classList.add("active");
     });
 
     updateSettingsUI();
@@ -351,13 +389,15 @@ export default class Game {
     });
 
     const btnBackUpgrades = document.getElementById("btn-back-upgrades");
-    if (btnBackUpgrades) {
-      btnBackUpgrades.addEventListener("click", () => {
-        this.ui.upgrades.classList.remove("active");
-        this.ui.menu.classList.remove("active");
+    btnBackUpgrades.addEventListener("click", () => {
+      this.ui.upgrades.classList.remove("active");
+
+      if (this.cameFromLevelSelect) {
         document.getElementById("level-menu").classList.add("active");
-      });
-    }
+      } else {
+        this.ui.menu.classList.add("active");
+      }
+    });
 
     document.getElementById("btn-menu").addEventListener("click", () => {
       this.setState(this.states.MENU);
@@ -373,7 +413,9 @@ export default class Game {
 
     window.addEventListener("keydown", (event) => {
       if (
-        (event.key === " " || event.key === "Spacebar" || event.key === "Space") &&
+        (event.key === " " ||
+          event.key === "Spacebar" ||
+          event.key === "Space") &&
         this.currentState === this.states.DIALOG
       ) {
         event.preventDefault();
@@ -408,40 +450,48 @@ export default class Game {
     });
 
     // Speed Add / Sub
-    document.getElementById("btn-upg-speed-add").addEventListener("click", () => {
-      if (this.loadout.speed < 3 && this.bankedSP >= this.costs.speed) {
-        this.loadout.speed++;
-        this.bankedSP -= this.costs.speed;
-        this.saveData();
-        this.updateUI();
-      }
-    });
-    document.getElementById("btn-upg-speed-sub").addEventListener("click", () => {
-      if (this.loadout.speed > 0) {
-        this.loadout.speed--;
-        this.bankedSP += this.costs.speed;
-        this.saveData();
-        this.updateUI();
-      }
-    });
+    document
+      .getElementById("btn-upg-speed-add")
+      .addEventListener("click", () => {
+        if (this.loadout.speed < 3 && this.bankedSP >= this.costs.speed) {
+          this.loadout.speed++;
+          this.bankedSP -= this.costs.speed;
+          this.saveData();
+          this.updateUI();
+        }
+      });
+    document
+      .getElementById("btn-upg-speed-sub")
+      .addEventListener("click", () => {
+        if (this.loadout.speed > 0) {
+          this.loadout.speed--;
+          this.bankedSP += this.costs.speed;
+          this.saveData();
+          this.updateUI();
+        }
+      });
 
     // Health Add / Sub
-    document.getElementById("btn-upg-health-add").addEventListener("click", () => {
-      if (this.loadout.health < 2 && this.bankedSP >= this.costs.health) {
-        this.loadout.health++;
-        this.bankedSP -= this.costs.health;
-        this.saveData();
-        this.updateUI();
-      }
-    });
-    document.getElementById("btn-upg-health-sub").addEventListener("click", () => {
-      if (this.loadout.health > 0) {
-        this.loadout.health--;
-        this.bankedSP += this.costs.health;
-        this.saveData();
-        this.updateUI();
-      }
-    });
+    document
+      .getElementById("btn-upg-health-add")
+      .addEventListener("click", () => {
+        if (this.loadout.health < 2 && this.bankedSP >= this.costs.health) {
+          this.loadout.health++;
+          this.bankedSP -= this.costs.health;
+          this.saveData();
+          this.updateUI();
+        }
+      });
+    document
+      .getElementById("btn-upg-health-sub")
+      .addEventListener("click", () => {
+        if (this.loadout.health > 0) {
+          this.loadout.health--;
+          this.bankedSP += this.costs.health;
+          this.saveData();
+          this.updateUI();
+        }
+      });
 
     // Transformations
     const toggleTransformation = (type, requiredLevel) => {
@@ -462,9 +512,33 @@ export default class Game {
       this.updateUI();
     };
 
-    document.getElementById("btn-upg-rex").addEventListener("click", () => toggleTransformation("rex", 1));
-    document.getElementById("btn-upg-tri").addEventListener("click", () => toggleTransformation("tri", 1));
-    document.getElementById("btn-upg-pengu").addEventListener("click", () => toggleTransformation("pengu", 2));
+    document
+      .getElementById("btn-upg-rex")
+      .addEventListener("click", () => toggleTransformation("rex", 1));
+    document
+      .getElementById("btn-upg-tri")
+      .addEventListener("click", () => toggleTransformation("tri", 1));
+    document
+      .getElementById("btn-upg-pengu")
+      .addEventListener("click", () => toggleTransformation("pengu", 2));
+  }
+
+  updateHallOfFame() {
+    const scores = JSON.parse(
+      sessionStorage.getItem("hordeless_top_scores") || "[]",
+    );
+
+    for (let i = 0; i < 3; i++) {
+      const element = document.getElementById(`hof-${i + 1}`);
+
+      if (!element) continue;
+
+      if (scores[i]) {
+        element.innerHTML = `Level ${scores[i].level} : ${scores[i].score}`;
+      } else {
+        element.innerHTML = "Empty";
+      }
+    }
   }
 
   setAudioSetting(type, enabled) {
@@ -486,6 +560,39 @@ export default class Game {
     }
   }
 
+  saveHighScore(score, levelIndex) {
+    let scores = JSON.parse(
+      sessionStorage.getItem("hordeless_top_scores") || "[]",
+    );
+
+    scores.push({
+      score: Math.floor(score),
+      level: levelIndex + 1,
+    });
+
+    scores.sort((a, b) => b.score - a.score);
+
+    scores = scores.slice(0, 3);
+
+    sessionStorage.setItem("hordeless_top_scores", JSON.stringify(scores));
+  }
+
+  saveLevelScore(score, levelIndex) {
+    let scores = JSON.parse(
+      sessionStorage.getItem("hordeless_top_scores") || "[]",
+    );
+
+    scores.push({
+      score: Math.floor(score),
+      level: levelIndex + 1,
+    });
+
+    scores.sort((a, b) => b.score - a.score);
+    scores = scores.slice(0, 3);
+
+    sessionStorage.setItem("hordeless_top_scores", JSON.stringify(scores));
+  }
+
   saveData() {
     localStorage.setItem("hordeless_skill_points", this.bankedSP);
     localStorage.setItem("hordeless_loadout", JSON.stringify(this.loadout));
@@ -504,15 +611,39 @@ export default class Game {
 
     if (this.ui.lvlRex) {
       const dinoUnlocked = this.unlockedLevelIndex >= 1;
-      this.ui.lvlRex.innerText = dinoUnlocked ? (this.loadout.rex ? "ON" : "OFF") : "LOCKED";
-      this.ui.lvlRex.style.color = dinoUnlocked ? (this.loadout.rex ? "#4CAF50" : "white") : "#ff5252";
+      this.ui.lvlRex.innerText = dinoUnlocked
+        ? this.loadout.rex
+          ? "ON"
+          : "OFF"
+        : "LOCKED";
+      this.ui.lvlRex.style.color = dinoUnlocked
+        ? this.loadout.rex
+          ? "#4CAF50"
+          : "white"
+        : "#ff5252";
 
-      this.ui.lvlTri.innerText = dinoUnlocked ? (this.loadout.tri ? "ON" : "OFF") : "LOCKED";
-      this.ui.lvlTri.style.color = dinoUnlocked ? (this.loadout.tri ? "#4CAF50" : "white") : "#ff5252";
+      this.ui.lvlTri.innerText = dinoUnlocked
+        ? this.loadout.tri
+          ? "ON"
+          : "OFF"
+        : "LOCKED";
+      this.ui.lvlTri.style.color = dinoUnlocked
+        ? this.loadout.tri
+          ? "#4CAF50"
+          : "white"
+        : "#ff5252";
 
       const penguUnlocked = this.unlockedLevelIndex >= 2;
-      this.ui.lvlPengu.innerText = penguUnlocked ? (this.loadout.pengu ? "ON" : "OFF") : "LOCKED";
-      this.ui.lvlPengu.style.color = penguUnlocked ? (this.loadout.pengu ? "#4CAF50" : "white") : "#ff5252";
+      this.ui.lvlPengu.innerText = penguUnlocked
+        ? this.loadout.pengu
+          ? "ON"
+          : "OFF"
+        : "LOCKED";
+      this.ui.lvlPengu.style.color = penguUnlocked
+        ? this.loadout.pengu
+          ? "#4CAF50"
+          : "white"
+        : "#ff5252";
     }
   }
 
@@ -542,17 +673,26 @@ export default class Game {
         break;
       case this.states.GAMEOVER:
         this.ui.gameOver.classList.add("active");
+
         const header = this.ui.gameOver.querySelector("h2");
         if (header) {
           header.innerText = this.victory ? "YOU WIN!!!!" : "GAME OVER";
         }
-        this.ui.goScore.innerText = Math.floor(this.score);
-        this.ui.goCoins.innerText = this.sessionSkillPoints;
+
+        this.ui.goScore.innerText = this.lastRun
+          ? Math.floor(this.lastRun.score)
+          : Math.floor(this.score);
+
+        this.ui.goCoins.innerText = this.lastRun
+          ? this.lastRun.sp
+          : this.sessionSkillPoints;
+
         break;
     }
   }
 
   startRun() {
+    this.lastRun = null;
     this.victory = false;
     this.survivalTime = 0;
     this.sessionSkillPoints = 0;
@@ -567,13 +707,37 @@ export default class Game {
   }
 
   endRun() {
+    this.lastRun = {
+      score: this.score,
+      sp: this.sessionSkillPoints,
+    };
+
     this.bankSessionSkillPoints();
 
+    // ===== Simpan Top 3 Score =====
+    let scores = JSON.parse(
+      sessionStorage.getItem("hordeless_top_scores") || "[]",
+    );
+
+    scores.push({
+      score: Math.floor(this.score),
+      level: this.currentLevelIndex + 1,
+    });
+
+    scores.sort((a, b) => b.score - a.score);
+    scores = scores.slice(0, 3);
+
+    sessionStorage.setItem("hordeless_top_scores", JSON.stringify(scores));
+
+    // ===============================
+
     const heavenlySound = audioManager.sounds?.heavenly;
+
     const shouldDelayGameOver =
       heavenlySound &&
       !heavenlySound.paused &&
       heavenlySound.currentTime < heavenlySound.duration;
+
     const audioKey = this.victory ? "win" : "over";
 
     if (shouldDelayGameOver) {
@@ -581,12 +745,11 @@ export default class Game {
         () => {
           this.setState(this.states.GAMEOVER);
           audioManager.play(audioKey);
-          this.ui.goScore.innerText = Math.floor(this.score);
-          this.ui.goCoins.innerText = this.sessionSkillPoints;
           this.updateUI();
         },
-        (heavenlySound.duration - heavenlySound.currentTime + 1.0) * 1000,
+        (heavenlySound.duration - heavenlySound.currentTime + 1) * 1000,
       );
+
       return;
     }
 
@@ -626,12 +789,18 @@ export default class Game {
 
   updateDialog() {
     if (this.ui.dialogText) {
-      this.ui.dialogText.innerText = this.dialogLines[this.dialogLineIndex] || "";
+      this.ui.dialogText.innerText =
+        this.dialogLines[this.dialogLineIndex] || "";
     }
     if (this.ui.dialogSpeaker) {
       this.ui.dialogSpeaker.innerText = this.dialogSpeaker;
     }
-    if (this.ui.dialogPlayerBox && this.ui.dialogOtherBox && this.ui.dialogOtherName && this.ui.dialogOtherSprite) {
+    if (
+      this.ui.dialogPlayerBox &&
+      this.ui.dialogOtherBox &&
+      this.ui.dialogOtherName &&
+      this.ui.dialogOtherSprite
+    ) {
       const speaker = this.dialogSpeaker.toLowerCase();
       const isPlayerStory =
         speaker.includes("wanderer") ||
@@ -639,15 +808,22 @@ export default class Game {
         speaker.includes("explorer") ||
         speaker.includes("unknown") ||
         speaker.includes("ark-01");
-      const isPenguinSpeaking = speaker.includes("glacielle") || speaker.includes("penguin");
+      const isPenguinSpeaking =
+        speaker.includes("glacielle") || speaker.includes("penguin");
 
       this.ui.dialogOtherName.innerText = this.dialogSpeaker;
       this.ui.dialogPlayerBox.classList.toggle("active", isPlayerStory);
       this.ui.dialogOtherBox.classList.toggle("active", !isPlayerStory);
       this.ui.dialogOtherBox.style.display = isPlayerStory ? "none" : "flex";
 
-      this.ui.dialogOtherSprite.classList.toggle("dialog-sprite-pengu", isPenguinSpeaking);
-      this.ui.dialogOtherSprite.classList.toggle("dialog-sprite-dino", !isPenguinSpeaking);
+      this.ui.dialogOtherSprite.classList.toggle(
+        "dialog-sprite-pengu",
+        isPenguinSpeaking,
+      );
+      this.ui.dialogOtherSprite.classList.toggle(
+        "dialog-sprite-dino",
+        !isPenguinSpeaking,
+      );
     }
   }
 
@@ -657,10 +833,10 @@ export default class Game {
     this.updateHUD();
   }
 
-  updateHUD(health = 0) {
+  updateHUD(health = null) {
     this.ui.hudScore.innerText = Math.floor(this.score);
     this.ui.hudCoins.innerText = this.sessionSkillPoints;
-    if (health !== 0) {
+    if (health !== null) {
       this.ui.hudHealth.innerText = health;
     }
   }

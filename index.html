@@ -1,188 +1,269 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hordeless</title>
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="icon" type="image/x-icon" href="/Assets/game-icon.png" />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hordeless</title>
-  <link rel="stylesheet" href="./style.css" />
-</head>
+  <body>
+    <div id="game-container">
+      <canvas id="gameCanvas"></canvas>
 
-<body>
-  <div id="game-container">
-    <canvas id="gameCanvas"></canvas>
+      <!-- Music -->
+      <audio
+        id="bg-music"
+        src="/Assets/bobbeats-8-bit-loop-music-290770.mp3.mpeg"
+        loop
+      ></audio>
 
-    <!-- Music -->
-    <audio id="bg-music" src="/Assets/bobbeats-8-bit-loop-music-290770.mp3.mpeg" loop></audio>
+      <!-- UI Overlays -->
+      <div id="main-menu" class="ui-screen active">
+        <h1 class="pixel-text">HORDELESS</h1>
 
-    <!-- UI Overlays -->
-    <div id="main-menu" class="ui-screen active">
-      <h1 class="pixel-text">HORDELESS</h1>
-
-      <div id="settings-panel" class="settings-panel">
-        <h3>Audio Settings</h3>
-        <div class="settings-option">
-          <span>Music</span>
-          <button id="toggle-music" class="toggle-btn">On</button>
+        <div id="settings-panel" class="settings-panel">
+          <h3>Audio Settings</h3>
+          <div class="settings-option">
+            <span>Music</span>
+            <button id="toggle-music" class="toggle-btn">On</button>
+          </div>
+          <div class="settings-option">
+            <span>Sound Effect</span>
+            <button id="toggle-sound" class="toggle-btn">On</button>
+          </div>
+          <button id="btn-settings-close" class="action-btn">Back</button>
         </div>
-        <div class="settings-option">
-          <span>Sound Effect</span>
-          <button id="toggle-sound" class="toggle-btn">On</button>
+
+        <div class="menu-buttons">
+          <img
+            src="/Assets/Free/Menu/Buttons/Play.png"
+            id="btn-play"
+            alt="Play"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Levels.png"
+            id="btn-levels"
+            alt="Levels"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Leaderboard.png"
+            id="btn-leaderboard"
+            alt="Leaderboard"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Achievements.png"
+            id="btn-achievements"
+            alt="Achievements"
+            class="pixel-btn"
+          />
+          <img
+            src="/Assets/Free/Menu/Buttons/Settings.png"
+            id="btn-settings"
+            alt="Settings"
+            class="pixel-btn"
+          />
         </div>
-        <button id="btn-settings-close" class="action-btn">Back</button>
       </div>
 
-      <div class="menu-buttons">
-        <img src="/Assets/Free/Menu/Buttons/Play.png" id="btn-play" alt="Play" class="pixel-btn" />
-        <img src="/Assets/Free/Menu/Buttons/Levels.png" id="btn-levels" alt="Levels" class="pixel-btn" />
-        <img src="/Assets/Free/Menu/Buttons/Leaderboard.png" id="btn-leaderboard" alt="Leaderboard" class="pixel-btn" />
-        <img src="/Assets/Free/Menu/Buttons/Achievements.png" id="btn-achievements" alt="Achievements"
-          class="pixel-btn" />
-        <img src="/Assets/Free/Menu/Buttons/Settings.png" id="btn-settings" alt="Settings" class="pixel-btn" />
-      </div>
-    </div>
+      <div id="halloffame-menu" class="ui-screen">
+        <h2>Hall of Fame</h2>
 
-    <div id="level-menu" class="ui-screen">
-      <h2 style="color: #fff">Select Level</h2>
-      <div style="
+        <div class="hof-container">
+          <div class="hof-first">
+            <h3>🏆 TOP 1</h3>
+
+            <p id="hof-1">Empty</p>
+          </div>
+
+          <div class="hof-row">
+            <div class="hof-card">
+              <h3>🥈 TOP 2</h3>
+
+              <p id="hof-2">Empty</p>
+            </div>
+
+            <div class="hof-card">
+              <h3>🥉 TOP 3</h3>
+
+              <p id="hof-3">Empty</p>
+            </div>
+          </div>
+
+          <button id="btn-back-hof" class="action-btn">Back</button>
+        </div>
+      </div>
+
+      <div id="level-menu" class="ui-screen">
+        <h2 style="color: #fff">Select Level</h2>
+        <div
+          style="
             display: flex;
             flex-direction: column;
             gap: 20px;
             align-items: center;
-          ">
-        <button id="btn-select-lvl1" class="action-btn" style="width: 250px">
-          Level 1: Grassland
-        </button>
-        <button id="btn-select-lvl2" class="action-btn" style="width: 250px">
-          Level 2: Dungeon
-        </button>
-        <button id="btn-select-lvl3" class="action-btn" style="width: 250px">
-          Level 3: Twilight
-        </button>
-        <button id="btn-back-levels" style="margin-top: 20px; width: 150px">
-          Back
-        </button>
+          "
+        >
+          <button id="btn-select-lvl1" class="action-btn" style="width: 250px">
+            Level 1: Grassland
+          </button>
+          <button id="btn-select-lvl2" class="action-btn" style="width: 250px">
+            Level 2: Dungeon
+          </button>
+          <button id="btn-select-lvl3" class="action-btn" style="width: 250px">
+            Level 3: Twilight
+          </button>
+          <button id="btn-back-levels" style="margin-top: 20px; width: 150px">
+            Back
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div id="upgrade-menu" class="ui-screen">
-      <h2>Skill Preparation</h2>
-      <div class="stats-display">
-        <span style="color: #4caf50; font-size: 24px">Skill Points: <span id="menu-sp">20</span> SP</span>
-      </div>
-      <div class="carousel-container">
-        <button id="btn-carousel-prev" class="carousel-btn">&lt;</button>
-        <div class="carousel-window">
-          <div class="upgrade-list" id="upgrade-list">
-            <div class="upgrade-item">
-              <span>Double Jump<br />(20 SP)</span>
-              <div class="upgrade-actions">
-                <span id="lvl-djump">OFF</span>
-                <button id="btn-upg-djump">Toggle</button>
+      <div id="upgrade-menu" class="ui-screen">
+        <h2>Skill Preparation</h2>
+        <div class="stats-display">
+          <span style="color: #4caf50; font-size: 24px"
+            >Skill Points: <span id="menu-sp">20</span> SP</span
+          >
+        </div>
+        <div class="carousel-container">
+          <button id="btn-carousel-prev" class="carousel-btn">&lt;</button>
+          <div class="carousel-window">
+            <div class="upgrade-list" id="upgrade-list">
+              <div class="upgrade-item">
+                <span>Double Jump<br />(20 SP)</span>
+                <div class="upgrade-actions">
+                  <span id="lvl-djump">OFF</span>
+                  <button id="btn-upg-djump">Toggle</button>
+                </div>
               </div>
-            </div>
-            <div class="upgrade-item">
-              <span>Wall Jump<br />(20 SP)</span>
-              <div class="upgrade-actions">
-                <span id="lvl-wjump">OFF</span>
-                <button id="btn-upg-wjump">Toggle</button>
+              <div class="upgrade-item">
+                <span>Wall Jump<br />(20 SP)</span>
+                <div class="upgrade-actions">
+                  <span id="lvl-wjump">OFF</span>
+                  <button id="btn-upg-wjump">Toggle</button>
+                </div>
               </div>
-            </div>
-            <div class="upgrade-item">
-              <span>Swiftness [+Spd]<br />(-20 SP/Lv)</span>
-              <div class="upgrade-actions">
-                <span id="lvl-speed">Lv 0</span>
-                <button id="btn-upg-speed-add" class="small-btn">+</button>
-                <button id="btn-upg-speed-sub" class="small-btn">-</button>
+              <div class="upgrade-item">
+                <span>Swiftness [+Spd]<br />(-20 SP/Lv)</span>
+                <div class="upgrade-actions">
+                  <span id="lvl-speed">Lv 0</span>
+                  <button id="btn-upg-speed-add" class="small-btn">+</button>
+                  <button id="btn-upg-speed-sub" class="small-btn">-</button>
+                </div>
               </div>
-            </div>
-            <div class="upgrade-item">
-              <span>Terranox Form<br />(30 SP)</span>
-              <div class="upgrade-actions">
-                <span id="lvl-rex">OFF</span>
-                <button id="btn-upg-rex">Toggle</button>
+              <div class="upgrade-item">
+                <span>Terranox Form<br />(30 SP)</span>
+                <div class="upgrade-actions">
+                  <span id="lvl-rex">OFF</span>
+                  <button id="btn-upg-rex">Toggle</button>
+                </div>
               </div>
-            </div>
-            <div class="upgrade-item">
-              <span>Dino Tri Form<br />(30 SP)</span>
-              <div class="upgrade-actions">
-                <span id="lvl-tri">OFF</span>
-                <button id="btn-upg-tri">Toggle</button>
+              <div class="upgrade-item">
+                <span>Dino Tri Form<br />(30 SP)</span>
+                <div class="upgrade-actions">
+                  <span id="lvl-tri">OFF</span>
+                  <button id="btn-upg-tri">Toggle</button>
+                </div>
               </div>
-            </div>
-            <div class="upgrade-item">
-              <span>Pengu Form<br />(30 SP)</span>
-              <div class="upgrade-actions">
-                <span id="lvl-pengu">OFF</span>
-                <button id="btn-upg-pengu">Toggle</button>
+              <div class="upgrade-item">
+                <span>Pengu Form<br />(30 SP)</span>
+                <div class="upgrade-actions">
+                  <span id="lvl-pengu">OFF</span>
+                  <button id="btn-upg-pengu">Toggle</button>
+                </div>
               </div>
-            </div>
-            <div class="upgrade-item">
-              <span>Vitality [+HP]<br />(-30 SP/Lv)</span>
-              <div class="upgrade-actions">
-                <span id="lvl-health">Lv 0</span>
-                <button id="btn-upg-health-add" class="small-btn">+</button>
-                <button id="btn-upg-health-sub" class="small-btn">-</button>
+              <div class="upgrade-item">
+                <span>Vitality [+HP]<br />(-30 SP/Lv)</span>
+                <div class="upgrade-actions">
+                  <span id="lvl-health">Lv 0</span>
+                  <button id="btn-upg-health-add" class="small-btn">+</button>
+                  <button id="btn-upg-health-sub" class="small-btn">-</button>
+                </div>
               </div>
             </div>
           </div>
+          <button id="btn-carousel-next" class="carousel-btn">&gt;</button>
         </div>
-        <button id="btn-carousel-next" class="carousel-btn">&gt;</button>
-      </div>
-      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-        <button id="btn-start-run" class="action-btn">Enter Arena</button>
-        <button id="btn-back-upgrades" class="action-btn" style="background-color: #4CAF50;">Back</button>
-      </div>
-    </div>
-    <div id="hud" class="ui-screen">
-
-      <div class="hud-top">
-        <div class="hud-stat">Health: <span id="hud-health">3</span></div>
-        <div class="hud-stat">Score: <span id="hud-score">0</span></div>
-        <div class="hud-stat">SP Collected: <span id="hud-coins">0</span></div>
-      </div>
-      <div id="controls-hud" class="controls-hud" aria-hidden="true">
-        <div class="controls-row"><strong>Move:</strong> W A S D / ↑ ← ↓ →</div>
-        <div class="controls-row"><strong>Jump:</strong> Space / W / ↑</div>
-        <div id="controls-attack" class="controls-row" style="display:none"><strong>Attack:</strong> SHIFT / F / J / Z
+        <div
+          style="
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+          "
+        >
+          <button id="btn-start-run" class="action-btn">Enter Arena</button>
+          <button
+            id="btn-back-upgrades"
+            class="action-btn"
+            style="background-color: #4caf50"
+          >
+            Back
+          </button>
         </div>
       </div>
-    </div>
-
-    <div id="dialog-screen" class="ui-screen">
-      <div class="dialog-box dialog-box--with-cast">
-        <div class="dialog-cast dialog-player active">
-          <div class="dialog-sprite dialog-sprite-player"></div>
-          <div class="dialog-cast-name">Player</div>
-        </div>
-
-        <div class="dialog-content">
-          <div id="dialog-speaker" class="dialog-speaker">Terranox</div>
-          <div id="dialog-text" class="dialog-text">
-            The planet calls out to you...
-          </div>
-          <div id="dialog-prompt" class="dialog-prompt">
-            Press Space or click to continue
+      <div id="hud" class="ui-screen">
+        <div class="hud-top">
+          <div class="hud-stat">Health: <span id="hud-health">3</span></div>
+          <div class="hud-stat">Score: <span id="hud-score">0</span></div>
+          <div class="hud-stat">
+            SP Collected: <span id="hud-coins">0</span>
           </div>
         </div>
-
-        <div class="dialog-cast dialog-other">
-          <div class="dialog-sprite dialog-sprite-other dialog-sprite-dino"></div>
-          <div class="dialog-cast-name dialog-other-name">Dino Rex</div>
+        <div id="controls-hud" class="controls-hud" aria-hidden="true">
+          <div class="controls-row">
+            <strong>Move:</strong> W A S D / ↑ ← ↓ →
+          </div>
+          <div class="controls-row"><strong>Jump:</strong> Space / W / ↑</div>
+          <div class="controls-row">
+            <strong>Drop from Platform:</strong> ↓ + ↑
+          </div>
+          <div id="controls-attack" class="controls-row" style="display: none">
+            <strong>Attack:</strong> SHIFT / F / J / Z
+          </div>
         </div>
+      </div>
+
+      <div id="dialog-screen" class="ui-screen">
+        <div class="dialog-box dialog-box--with-cast">
+          <div class="dialog-cast dialog-player active">
+            <div class="dialog-sprite dialog-sprite-player"></div>
+            <div class="dialog-cast-name">Player</div>
+          </div>
+
+          <div class="dialog-content">
+            <div id="dialog-speaker" class="dialog-speaker">Terranox</div>
+            <div id="dialog-text" class="dialog-text">
+              The planet calls out to you...
+            </div>
+            <div id="dialog-prompt" class="dialog-prompt">
+              Press Space or click to continue
+            </div>
+          </div>
+
+          <div class="dialog-cast dialog-other">
+            <div
+              class="dialog-sprite dialog-sprite-other dialog-sprite-dino"
+            ></div>
+            <div class="dialog-cast-name dialog-other-name">Dino Rex</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="game-over" class="ui-screen">
+        <h2>GAME OVER</h2>
+        <p>Final Score: <span id="go-score">0</span></p>
+        <p>Skill Points Earned: <span id="go-coins">0</span></p>
+        <button id="btn-menu">Back to Menu</button>
       </div>
     </div>
 
-    <div id="game-over" class="ui-screen">
-      <h2>GAME OVER</h2>
-      <p>Final Score: <span id="go-score">0</span></p>
-      <p>Skill Points Earned: <span id="go-coins">0</span></p>
-      <button id="btn-menu">Back to Menu</button>
-    </div>
-  </div>
-
-  <script type="module" src="/main.js"></script>
-</body>
-
+    <script type="module" src="/main.js"></script>
+  </body>
 </html>
