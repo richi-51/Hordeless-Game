@@ -43,23 +43,28 @@ bgImage.onload = () => {
 };
 
 const spikeImage = new Image();
-spikeImage.src = "/Assets/Free/Traps/Spikes/Idle.png"; // 16x16
+spikeImage.src = "./Assets/Free/Traps/Spikes/Idle.png";
 
 // Start and End flags
 const startFlag = new Sprite(
-  "/Assets/Free/Items/Checkpoints/Start/Start (Moving) (64x64).png",
+  "./Assets/Free/Items/Checkpoints/Start/Start (Moving) (64x64).png",
   64,
   64,
   17,
-  0.05,
+  0.05
 );
 const endFlag = new Sprite(
-  "/Assets/Free/Items/Checkpoints/End/End (Idle).png",
+  "./Assets/Free/Items/Checkpoints/End/End (Idle).png",
   64,
   64,
   1,
-  0.1,
+  0.1
 );
+
+// End NPC companion sprite tracking
+let endNpcSprite = null;
+let endNpcImage = new Image();
+
 let startX = 50;
 let endX = LEVEL_WIDTH - 150;
 
@@ -81,11 +86,27 @@ game.onStartRun = (upgrades) => {
   startX = 50;
   endX = LEVEL_WIDTH - 150;
 
+  // Safe NPC Image Preloader & Sprite Handler
+  if (currentLevel.npcBoss) {
+    endNpcImage = new Image();
+    endNpcImage.src = currentLevel.npcBoss.sprite;
+
+    endNpcSprite = new Sprite(
+      currentLevel.npcBoss.sprite,
+      currentLevel.npcBoss.frameWidth,
+      currentLevel.npcBoss.frameHeight,
+      currentLevel.npcBoss.frameCount,
+      currentLevel.npcBoss.frameDuration
+    );
+  } else {
+    endNpcSprite = null;
+  }
+
   platforms.reset(
     currentLevel.platforms,
     currentLevel.terrain,
     currentLevel.terrainColor,
-    currentLevel.grassColor,
+    currentLevel.grassColor
   );
   enemies.reset(currentLevel.enemies, effects, currentLevel.gaps, currentLevel.terrain);
   bossManager.reset(currentLevel, player);
@@ -97,7 +118,7 @@ game.onStartRun = (upgrades) => {
           "A frozen ocean world. Snow never melts. Auroras cover the sky. Ice stretches beyond the horizon.",
           "But once again... the inhabitants have become monsters.",
           "While searching abandoned ice temples, the explorer discovers Glacielle, the Penguin Spirit.",
-          "Glacielle: \"Free my people... before this world becomes another empty shell.\"",
+          'Glacielle: "Free my people... before this world becomes another empty shell."',
           "The sacred seal is broken. Glacielle grants the Sacred Penguin Fruit.",
           "By consuming it, the explorer gains the ability to transform into the Penguin Spirit.",
           "Together, they push through corrupted glaciers and frozen temples until finally reaching the Devil himself.",
@@ -108,7 +129,7 @@ game.onStartRun = (upgrades) => {
           game.score += 500;
           game.unlockLevel(2);
           game.prepareLevel(2);
-        },
+        }
       );
     }
   };
@@ -117,20 +138,16 @@ game.onStartRun = (upgrades) => {
   boxes.reset(currentLevel.boxes, currentLevel.terrain, currentLevel.gaps);
   trampolines.reset(currentLevel.trampolines);
 
-  // Spawn confetti at start for polish
   effects.addEffect(startX, GAME_HEIGHT - 40, "confetti");
 
   cameraX = 0;
 };
 
-// Normal game flow starts from menu and level 1 prep only.
-// Debug auto-start removed.
+// Key bindings
 window.addEventListener("keydown", (e) => {
   if (e.key === "m" || e.key === "M") {
     overviewMode = !overviewMode;
   }
-});
-window.addEventListener("keydown", (e) => {
   if (e.key === "p" || e.key === "P") {
     exportLevelMap();
   }
@@ -146,7 +163,6 @@ function drawTerrain(ctx, cameraX) {
   const grassColor = currentLevel.grassColor || "#228B22";
   const groundLevel = GAME_HEIGHT - 40;
 
-  // Render ground segments, skipping gaps
   let groundSegments = [];
   if (currentLevel.gaps && currentLevel.gaps.length > 0) {
     let currentX = 0;
@@ -165,33 +181,86 @@ function drawTerrain(ctx, cameraX) {
   }
 
   for (let seg of groundSegments) {
-    // Base bulk of the ground (dirt)
     ctx.fillStyle = baseColor;
     ctx.fillRect(seg.x - cameraX, groundLevel + 8, seg.width, 40 - 8);
 
-    // Top band of terrain (colored)
     ctx.fillStyle = topColor;
     ctx.fillRect(seg.x - cameraX, groundLevel, seg.width, 8);
 
-    // Thin grass/highlight on very top
     ctx.fillStyle = grassColor;
     ctx.fillRect(seg.x - cameraX, groundLevel, seg.width, 4);
   }
 
-  // Draw Spikes in specific areas
   if (spikeImage.complete && currentLevel.spikes) {
     for (let spikeZone of currentLevel.spikes) {
-      const spikeY = spikeZone.y || (groundLevel - 16);
+      const spikeY = spikeZone.y || groundLevel - 16;
       for (let i = 0; i < spikeZone.count; i++) {
         ctx.drawImage(
           spikeImage,
           spikeZone.x + i * 16 - cameraX,
           spikeY,
           16,
-          16,
+          16
         );
       }
     }
+  }
+}
+
+/**
+ * Draws the companion NPC right next to the level goal trophy
+ */
+function drawEndNPC(ctx, cameraOffsetX) {
+  if (!currentLevel || !currentLevel.npcBoss) return;
+
+  const npcData = currentLevel.npcBoss;
+  const scale = npcData.scale || 0.5;
+  const renderWidth = npcData.frameWidth * scale;
+  const renderHeight = npcData.frameHeight * scale;
+
+  // Render position directly right of trophy on ground level
+  const npcX = endX + (npcData.offsetX || 48) - cameraOffsetX;
+  const npcY = GAME_HEIGHT - 40 - renderHeight;
+
+  // Draw sprite when loaded, otherwise render colored debugging placeholder
+  if (endNpcImage && endNpcImage.complete && endNpcImage.naturalWidth > 0) {
+    const currentFrame = endNpcSprite ? endNpcSprite.frame : 0;
+
+    ctx.save();
+    if (npcData.facingLeft) {
+      ctx.translate(npcX + renderWidth / 2, npcY + renderHeight / 2);
+      ctx.scale(-1, 1);
+      ctx.drawImage(
+        endNpcImage,
+        currentFrame * npcData.frameWidth,
+        0,
+        npcData.frameWidth,
+        npcData.frameHeight,
+        -renderWidth / 2,
+        -renderHeight / 2,
+        renderWidth,
+        renderHeight
+      );
+    } else {
+      ctx.drawImage(
+        endNpcImage,
+        currentFrame * npcData.frameWidth,
+        0,
+        npcData.frameWidth,
+        npcData.frameHeight,
+        npcX,
+        npcY,
+        renderWidth,
+        renderHeight
+      );
+    }
+    ctx.restore();
+  } else {
+    // Visible Fallback (Green for Dino, Cyan for Pengu) if asset fails to load
+    ctx.save();
+    ctx.fillStyle = npcData.type === "dino" ? "#228B22" : "#00FFFF";
+    ctx.fillRect(npcX, npcY, renderWidth, renderHeight);
+    ctx.restore();
   }
 }
 
@@ -202,7 +271,6 @@ function exportLevelMap() {
 
   const ectx = exportCanvas.getContext("2d");
 
-  // Background
   if (bgPattern) {
     ectx.fillStyle = bgPattern;
     ectx.fillRect(0, 0, LEVEL_WIDTH, GAME_HEIGHT);
@@ -211,21 +279,18 @@ function exportLevelMap() {
     ectx.fillRect(0, 0, LEVEL_WIDTH, GAME_HEIGHT);
   }
 
-  // Terrain
   drawTerrain(ectx, 0);
 
-  // Flags
   startFlag.draw(ectx, startX, GAME_HEIGHT - 40 - 64);
   endFlag.draw(ectx, endX, GAME_HEIGHT - 40 - 64);
+  drawEndNPC(ectx, 0);
 
-  // Semua object
   platforms.draw(ectx, 0, true);
   boxes.draw(ectx, 0);
   trampolines.draw(ectx, 0);
   items.draw(ectx, 0);
   enemies.draw(ectx, 0);
 
-  // Player Spawn
   player.draw(ectx, 0);
 
   const img = exportCanvas.toDataURL("image/png");
@@ -244,18 +309,29 @@ function gameLoop(timestamp) {
   if (isNaN(deltaTime)) deltaTime = 0;
   lastTime = timestamp;
   if (deltaTime > 0.1) deltaTime = 0.1;
-
-  // Draw scrolling background
+  // Toggle attack control visibility: only show when player is Dino (rex/tri)
+  try {
+    const attackEl = document.getElementById('controls-attack');
+    if (attackEl) {
+      if (player.form === 'rex' || player.form === 'tri') {
+        attackEl.style.display = '';
+      } else {
+        attackEl.style.display = 'none';
+      }
+    }
+  } catch (e) {
+    // ignore DOM errors in non-browser contexts
+  }
   if (bgPattern) {
     ctx.save();
     ctx.fillStyle = bgPattern;
-    // Parallax effect on background
     ctx.translate(-(cameraX * 0.5) % 64, 0);
     ctx.fillRect(-64, 0, GAME_WIDTH + 128, GAME_HEIGHT);
     ctx.restore();
   } else {
     ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
   }
+
   if (bossManager.redAlpha > 0) {
     ctx.save();
     ctx.fillStyle = `rgba(200, 0, 0, ${bossManager.redAlpha})`;
@@ -267,13 +343,13 @@ function gameLoop(timestamp) {
     const scale = GAME_WIDTH / LEVEL_WIDTH;
 
     ctx.save();
-
     ctx.scale(scale, scale);
 
     drawTerrain(ctx, 0);
 
     startFlag.draw(ctx, startX, GAME_HEIGHT - 40 - 64);
     endFlag.draw(ctx, endX, GAME_HEIGHT - 40 - 64);
+    drawEndNPC(ctx, 0);
 
     platforms.draw(ctx, 0);
     boxes.draw(ctx, 0);
@@ -295,12 +371,16 @@ function gameLoop(timestamp) {
   }
 
   if (game.currentState === game.states.PLAYING) {
-    // Update Game Logic
     input.update(deltaTime);
     platforms.update(deltaTime);
     effects.update(deltaTime);
     startFlag.update(deltaTime);
     endFlag.update(deltaTime);
+
+    if (endNpcSprite) {
+      endNpcSprite.update(deltaTime);
+    }
+
     input.platforms = platforms.platforms;
     input.boxes = boxes.boxes;
 
@@ -312,7 +392,6 @@ function gameLoop(timestamp) {
     trampolines.update(deltaTime, player);
     game.updateScore(deltaTime);
 
-    // Camera Follows Player (centered horizontally)
     if (!overviewMode) {
       cameraX = player.x - GAME_WIDTH / 2 + player.width / 2;
 
@@ -325,7 +404,6 @@ function gameLoop(timestamp) {
       }
     }
 
-    // Check Spike Collision
     if (
       player.y + player.height >= GAME_HEIGHT - 40 - 16 &&
       currentLevel.spikes
@@ -341,7 +419,6 @@ function gameLoop(timestamp) {
       }
     }
 
-    // Check End Goal Collision
     if (
       player.x + player.width > endX &&
       player.y + player.height >= GAME_HEIGHT - 40 - 64
@@ -350,9 +427,18 @@ function gameLoop(timestamp) {
         if (game.currentLevelIndex === 0) {
           game.startDialog(
             [
-              "You have cleared the first trial.",
-              "A distant roar echoes as the path to the next arena opens.",
-              "Terranox: \"Well done, fighter. Prepare yourself for the next challenge.\"",
+              "A traveller from the stars...",
+              "You are not one of the Devil's servants, are you?",
+              "Long ago, the Horned Devil descended upon this world.",
+              "He poisoned the hearts of my people. Those who once lived in peace now fight as mindless beasts.",
+              "As long as his corruption remains... this planet can never heal.",
+              "I no longer possess the strength to oppose him.",
+              "Take this Sacred Dino Fruit.",
+              "It carries a fragment of my soul.",
+              "Whenever you consume one, your body will resonate with my spirit, allowing you to become me for a short time.",
+              "Use my strength. Break the Devil's corruption.",
+              "Save my people... and continue your journey.",
+              "Transformation Unlocked: Dino Spirit.",
               "Press Space or click to continue to Level 2.",
             ],
             "Terranox",
@@ -360,19 +446,24 @@ function gameLoop(timestamp) {
               game.score += 500;
               game.unlockLevel(1);
               game.prepareLevel(1);
-            },
+            }
           );
         } else if (game.currentLevelIndex === 1) {
           game.startDialog(
             [
-              "Following strange energy signals left behind by the fleeing corruption, the Wanderer reaches another planet.",
-              "A frozen ocean world. Snow never melts. Auroras cover the sky. Ice stretches beyond the horizon.",
-              "But once again... the inhabitants have become monsters.",
-              "While searching abandoned ice temples, the explorer discovers Glacielle, the Penguin Spirit.",
-              "Glacielle: \"Free my people... before this world becomes another empty shell.\"",
-              "The sacred seal is broken. Glacielle grants the Sacred Penguin Fruit.",
-              "By consuming it, the explorer gains the power to transform into the Penguin Spirit.",
-              "Together, they push through corrupted glaciers and frozen temples until finally reaching the Devil himself.",
+              "A visitor... from beyond the stars.",
+              "Terranox has entrusted you with his power.",
+              "Then there is still hope.",
+              "The Horned Devil reached this world after yours.",
+              "He buried my heart beneath eternal ice and twisted my people into his servants.",
+              "Their bodies remain... but their wills are no longer their own.",
+              "You have come farther than anyone before.",
+              "Allow me to lend you my strength.",
+              "This is the Sacred Penguin Fruit.",
+              "When you eat one, your spirit will unite with mine.",
+              "For a brief moment, you shall take my form and wield the power of frost.",
+              "Together... we may yet stop the Devil before another world falls.",
+              "Transformation Unlocked: Penguin Spirit.",
               "Press Space or click to continue to Level 3.",
             ],
             "Glacielle",
@@ -380,7 +471,7 @@ function gameLoop(timestamp) {
               game.score += 500;
               game.unlockLevel(2);
               game.prepareLevel(2);
-            },
+            }
           );
         } else {
           game.score += 500;
@@ -409,16 +500,17 @@ function gameLoop(timestamp) {
               "His journey continues.",
             ],
             "Wanderer",
-            () => game.endRun(),
+            () => game.endRun()
           );
         }
       }
     }
 
-    // Render everything with cameraX offset
     drawTerrain(ctx, cameraX);
     startFlag.draw(ctx, startX - cameraX, GAME_HEIGHT - 40 - 64);
     endFlag.draw(ctx, endX - cameraX, GAME_HEIGHT - 40 - 64);
+
+    drawEndNPC(ctx, cameraX);
 
     platforms.draw(ctx, cameraX, overviewMode);
     boxes.draw(ctx, cameraX);
